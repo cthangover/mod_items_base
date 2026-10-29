@@ -297,7 +297,7 @@ namespace Mods.InventoryTest
             foreach (var f in failures)
                 Log($"       failed: {f}");
             Log($"[TEST_RESULT] name={ResultName} passed={passed} failed={failed}");
-            GetTree().Quit(failed == 0 ? 0 : 1);
+            Cthangover.Core.Bootstrap.ApplicationExit.Quit(GetTree(), failed == 0 ? 0 : 1);
         }
 
         private void Log(string message)
