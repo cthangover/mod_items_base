@@ -3,7 +3,7 @@
   "name": "Items Base",
   "version": "1.0.0",
   "author": "ct",
-  "description": "Item definitions and factories, inventory and recipe state, inventory UI and their save state",
+  "description": "Items and the inventory: what an item is, the bag panel, what is saved, and scenario commands to give, take and check items.",
   "category": "gameplay",
   "sources": [
     "src/**/*.cs"
