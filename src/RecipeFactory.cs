@@ -77,12 +77,26 @@ namespace Cthangover.Core.Factories.Impls
             return _cache.Get(id);
         }
 
+        /// <summary>
+        /// The recipe's display name: its own <c>Name</c> locale key, else the name of the
+        /// first output item (plan C4), else null. <paramref name="itemName"/> looks an item
+        /// id up and returns its name key; it is a parameter so the rule is testable without
+        /// the item factory.
+        /// </summary>
+        public static string ResolveName(string name, IEnumerable<IngredientInfo> output, System.Func<string, string> itemName)
+        {
+            if (!string.IsNullOrEmpty(name))
+                return name;
+            var first = output?.FirstOrDefault(o => o != null && !string.IsNullOrEmpty(o.ID));
+            return first == null ? null : itemName(first.ID);
+        }
+
         private static Recipe CreateRecipe(RecipeInfo info)
         {
             return new Recipe
             {
                 ID = info.ID,
-                Name = info.Name,
+                Name = ResolveName(info.Name, info.Output, id => ItemFactory.Instance.Get(id)?.Name),
                 Description = info.Description,
                 Time = info.Time,
                 WorkbenchType = info.Type,
