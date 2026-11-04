@@ -21,18 +21,18 @@ Items Base は、ゲームにアイテムと、それを入れるバッグを与
 
 ## アイテムの定義
 
-アイテムは、mod の `items/` フォルダーに入る kind `item` の JSON ファイルで、画像はそのそばに置きます。こちらは上の画像のキノコ（RPG Demo のもの）です。
+アイテムは、mod の `items/` フォルダーに入る kind `item` の JSON ファイルで、画像はそのそばに置きます。こちらは上の画像のキノコ（RPG Plus のもの）です。
 
 ```json
 {
   "Kind": "item",
   "Items": [
     {
-      "Id": "rpg_demo/mushroom",
-      "Name": "rpg_demo/item/mushroom/name",
-      "Description": "rpg_demo/item/mushroom/desc",
+      "Id": "rpg_plus/mushroom",
+      "Name": "rpg_plus/item/mushroom/name",
+      "Description": "rpg_plus/item/mushroom/desc",
       "Cost": 2,
-      "Sprite": "rpg_demo/forest_mushroom",
+      "Sprite": "rpg_plus/forest_mushroom",
       "ItemType": "Food,TargetUsed",
       "ItemAction": "action/heal",
       "heal": 5,
@@ -44,7 +44,7 @@ Items Base は、ゲームにアイテムと、それを入れるバッグを与
 
 - `Name`、`Description` — 翻訳キー。詳細に表示されます。
 - `Cost` — 価格。店で使われます。
-- `Sprite` — 画像 `items/rpg_demo/forest_mushroom.png`。
+- `Sprite` — 画像 `items/rpg_plus/forest_mushroom.png`。
 - `ItemType` — 一つ以上の種類をカンマで並べます。`Food`、`Resource`、`Quest`、`Recipe`、`Used`（対象なしで使う）、`TargetUsed`（パーティのメンバーに使う）、`CantDrop`。
 - `ItemAction` — 使ったときに何が起きるか。`action/heal` はアイテムの `heal` の値だけ体力を回復します。最大値を超えず、倒れたキャラクターには決して使いません。ほかの mod もアクションを追加します。たとえば equipment の `action/equip`。
 - その他のキー（`heal`、`verb`）はアイテムのプロパティです。アクションが読み、詳細にも並びます。`verb` がアクションボタンの名前になります。
@@ -52,9 +52,9 @@ Items Base は、ゲームにアイテムと、それを入れるバッグを与
 ## シナリオの中のアイテム
 
 ```scenario
-action item.add id=rpg_demo/mushroom count=2
-when "item('rpg_demo/mushroom') >= 2" -> :enough
-action item.remove id=rpg_demo/mushroom count=2
+action item.add id=rpg_plus/mushroom count=2
+when "item('rpg_plus/mushroom') >= 2" -> :enough
+action item.remove id=rpg_plus/mushroom count=2
 ```
 
 - `item.add` はアイテムをバッグへ入れます（宝箱、贈り物、マップの拾い物）。`count` の既定値は 1 です。

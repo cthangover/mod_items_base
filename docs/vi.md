@@ -21,18 +21,18 @@ Nếu hành động không thực hiện được — ví dụ mục tiêu đã 
 
 ## Định nghĩa vật phẩm
 
-Vật phẩm là tệp JSON kind `item` trong thư mục `items/` của mod, ảnh đặt ngay cạnh. Đây là cây nấm trong các hình trên (thuộc RPG Demo):
+Vật phẩm là tệp JSON kind `item` trong thư mục `items/` của mod, ảnh đặt ngay cạnh. Đây là cây nấm trong các hình trên (thuộc RPG Plus):
 
 ```json
 {
   "Kind": "item",
   "Items": [
     {
-      "Id": "rpg_demo/mushroom",
-      "Name": "rpg_demo/item/mushroom/name",
-      "Description": "rpg_demo/item/mushroom/desc",
+      "Id": "rpg_plus/mushroom",
+      "Name": "rpg_plus/item/mushroom/name",
+      "Description": "rpg_plus/item/mushroom/desc",
       "Cost": 2,
-      "Sprite": "rpg_demo/forest_mushroom",
+      "Sprite": "rpg_plus/forest_mushroom",
       "ItemType": "Food,TargetUsed",
       "ItemAction": "action/heal",
       "heal": 5,
@@ -44,7 +44,7 @@ Vật phẩm là tệp JSON kind `item` trong thư mục `items/` của mod, ả
 
 - `Name`, `Description` — khóa dịch, hiện trong phần chi tiết.
 - `Cost` — giá, cửa hàng dùng đến.
-- `Sprite` — ảnh `items/rpg_demo/forest_mushroom.png`.
+- `Sprite` — ảnh `items/rpg_plus/forest_mushroom.png`.
 - `ItemType` — một hoặc nhiều loại, cách nhau bằng dấu phẩy: `Food`, `Resource`, `Quest`, `Recipe`, `Used` (dùng không cần mục tiêu), `TargetUsed` (dùng lên thành viên đội), `CantDrop`.
 - `ItemAction` — dùng vào việc gì. `action/heal` hồi máu theo giá trị `heal` của vật phẩm, không vượt quá mức tối đa và không bao giờ dùng lên người đã gục. Các mod khác thêm hành động riêng, ví dụ `action/equip` của equipment.
 - Khóa nào khác (`heal`, `verb`) là thuộc tính của vật phẩm: hành động đọc chúng, chi tiết cũng liệt kê. `verb` đặt tên cho nút hành động.
@@ -52,9 +52,9 @@ Vật phẩm là tệp JSON kind `item` trong thư mục `items/` của mod, ả
 ## Vật phẩm trong kịch bản
 
 ```scenario
-action item.add id=rpg_demo/mushroom count=2
-when "item('rpg_demo/mushroom') >= 2" -> :enough
-action item.remove id=rpg_demo/mushroom count=2
+action item.add id=rpg_plus/mushroom count=2
+when "item('rpg_plus/mushroom') >= 2" -> :enough
+action item.remove id=rpg_plus/mushroom count=2
 ```
 
 - `item.add` bỏ vật phẩm vào túi (rương, món quà, đồ nhặt trên bản đồ); `count` mặc định là 1.

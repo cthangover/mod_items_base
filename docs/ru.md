@@ -21,18 +21,18 @@ Items Base даёт игре предметы и сумку, чтобы их н�
 
 ## Описание предмета
 
-Предметы — это JSON-файлы вида `item` в папке `items/` мода, рядом с ними лежит картинка. Вот гриб с картинок выше (из RPG Demo):
+Предметы — это JSON-файлы вида `item` в папке `items/` мода, рядом с ними лежит картинка. Вот гриб с картинок выше (из RPG Plus):
 
 ```json
 {
   "Kind": "item",
   "Items": [
     {
-      "Id": "rpg_demo/mushroom",
-      "Name": "rpg_demo/item/mushroom/name",
-      "Description": "rpg_demo/item/mushroom/desc",
+      "Id": "rpg_plus/mushroom",
+      "Name": "rpg_plus/item/mushroom/name",
+      "Description": "rpg_plus/item/mushroom/desc",
       "Cost": 2,
-      "Sprite": "rpg_demo/forest_mushroom",
+      "Sprite": "rpg_plus/forest_mushroom",
       "ItemType": "Food,TargetUsed",
       "ItemAction": "action/heal",
       "heal": 5,
@@ -44,7 +44,7 @@ Items Base даёт игре предметы и сумку, чтобы их н�
 
 - `Name`, `Description` — ключи перевода, показываются в подробностях.
 - `Cost` — цена; её используют магазины.
-- `Sprite` — картинка `items/rpg_demo/forest_mushroom.png`.
+- `Sprite` — картинка `items/rpg_plus/forest_mushroom.png`.
 - `ItemType` — один или несколько типов через запятую: `Food`, `Resource`, `Quest`, `Recipe`, `Used` (применяется без цели), `TargetUsed` (применяется к члену отряда), `CantDrop`.
 - `ItemAction` — что делает применение. `action/heal` восстанавливает здоровье на значение `heal` предмета — не выше максимума и никогда не поднимает упавшего. Другие моды добавляют свои действия, например `action/equip` экипировки.
 - Любой другой ключ (`heal`, `verb`) — свойство предмета: действия его читают, а подробности его показывают. `verb` называет кнопку действия.
@@ -52,9 +52,9 @@ Items Base даёт игре предметы и сумку, чтобы их н�
 ## Предметы в сценариях
 
 ```scenario
-action item.add id=rpg_demo/mushroom count=2
-when "item('rpg_demo/mushroom') >= 2" -> :enough
-action item.remove id=rpg_demo/mushroom count=2
+action item.add id=rpg_plus/mushroom count=2
+when "item('rpg_plus/mushroom') >= 2" -> :enough
+action item.remove id=rpg_plus/mushroom count=2
 ```
 
 - `item.add` кладёт предметы в сумку (сундук, подарок, подбор на карте); `count` по умолчанию равен 1.

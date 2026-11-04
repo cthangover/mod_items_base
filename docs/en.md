@@ -21,18 +21,18 @@ If an action cannot be done — for example the target already has full health �
 
 ## An item definition
 
-Items are JSON files of kind `item` in a mod's `items/` folder, with the picture next to them. This is the mushroom from the pictures above (from RPG Demo):
+Items are JSON files of kind `item` in a mod's `items/` folder, with the picture next to them. This is the mushroom from the pictures above (from RPG Plus):
 
 ```json
 {
   "Kind": "item",
   "Items": [
     {
-      "Id": "rpg_demo/mushroom",
-      "Name": "rpg_demo/item/mushroom/name",
-      "Description": "rpg_demo/item/mushroom/desc",
+      "Id": "rpg_plus/mushroom",
+      "Name": "rpg_plus/item/mushroom/name",
+      "Description": "rpg_plus/item/mushroom/desc",
       "Cost": 2,
-      "Sprite": "rpg_demo/forest_mushroom",
+      "Sprite": "rpg_plus/forest_mushroom",
       "ItemType": "Food,TargetUsed",
       "ItemAction": "action/heal",
       "heal": 5,
@@ -44,7 +44,7 @@ Items are JSON files of kind `item` in a mod's `items/` folder, with the picture
 
 - `Name`, `Description` — translation keys, shown in the details.
 - `Cost` — the price, used by shops.
-- `Sprite` — the picture `items/rpg_demo/forest_mushroom.png`.
+- `Sprite` — the picture `items/rpg_plus/forest_mushroom.png`.
 - `ItemType` — one or more types, separated by commas: `Food`, `Resource`, `Quest`, `Recipe`, `Used` (used without a target), `TargetUsed` (used on a party member), `CantDrop`.
 - `ItemAction` — what using it does. `action/heal` restores health by the item's `heal` value, never above the maximum and never to a fallen character. Other mods add actions, for example equipment's `action/equip`.
 - Any other key (`heal`, `verb`) is an item property: actions read them, and the details list them. `verb` names the action button.
@@ -52,9 +52,9 @@ Items are JSON files of kind `item` in a mod's `items/` folder, with the picture
 ## Items in scenarios
 
 ```scenario
-action item.add id=rpg_demo/mushroom count=2
-when "item('rpg_demo/mushroom') >= 2" -> :enough
-action item.remove id=rpg_demo/mushroom count=2
+action item.add id=rpg_plus/mushroom count=2
+when "item('rpg_plus/mushroom') >= 2" -> :enough
+action item.remove id=rpg_plus/mushroom count=2
 ```
 
 - `item.add` puts items into the bag (a chest, a gift, a pickup on a map); `count` defaults to 1.

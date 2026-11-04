@@ -21,18 +21,18 @@ Items Base 为游戏提供物品和装物品的背包。它定义物品是什么
 
 ## 物品的定义
 
-物品是 mod 的 `items/` 文件夹里类型为 `item` 的 JSON 文件，图片就放在旁边。这是上面截图中的蘑菇（来自 RPG Demo）：
+物品是 mod 的 `items/` 文件夹里类型为 `item` 的 JSON 文件，图片就放在旁边。这是上面截图中的蘑菇（来自 RPG Plus）：
 
 ```json
 {
   "Kind": "item",
   "Items": [
     {
-      "Id": "rpg_demo/mushroom",
-      "Name": "rpg_demo/item/mushroom/name",
-      "Description": "rpg_demo/item/mushroom/desc",
+      "Id": "rpg_plus/mushroom",
+      "Name": "rpg_plus/item/mushroom/name",
+      "Description": "rpg_plus/item/mushroom/desc",
       "Cost": 2,
-      "Sprite": "rpg_demo/forest_mushroom",
+      "Sprite": "rpg_plus/forest_mushroom",
       "ItemType": "Food,TargetUsed",
       "ItemAction": "action/heal",
       "heal": 5,
@@ -44,7 +44,7 @@ Items Base 为游戏提供物品和装物品的背包。它定义物品是什么
 
 - `Name`、`Description` — 翻译键，显示在详情里。
 - `Cost` — 价格，商店会用到。
-- `Sprite` — 图片 `items/rpg_demo/forest_mushroom.png`。
+- `Sprite` — 图片 `items/rpg_plus/forest_mushroom.png`。
 - `ItemType` — 一个或多个类型，用逗号分隔：`Food`、`Resource`、`Quest`、`Recipe`、`Used`（无需目标直接使用）、`TargetUsed`（对队伍成员使用）、`CantDrop`。
 - `ItemAction` — 使用时做什么。`action/heal` 按物品的 `heal` 值恢复生命值，不会超过上限，也绝不会作用于倒下的角色。其他 mod 会添加自己的动作，例如装备的 `action/equip`。
 - 其余任何键（`heal`、`verb`）都是物品属性：动作读取它们，详情也会列出。`verb` 决定动作按钮的名字。
@@ -52,9 +52,9 @@ Items Base 为游戏提供物品和装物品的背包。它定义物品是什么
 ## 剧本中的物品
 
 ```scenario
-action item.add id=rpg_demo/mushroom count=2
-when "item('rpg_demo/mushroom') >= 2" -> :enough
-action item.remove id=rpg_demo/mushroom count=2
+action item.add id=rpg_plus/mushroom count=2
+when "item('rpg_plus/mushroom') >= 2" -> :enough
+action item.remove id=rpg_plus/mushroom count=2
 ```
 
 - `item.add` 把物品放进背包（宝箱、礼物、地图上的拾取物）；`count` 默认为 1。

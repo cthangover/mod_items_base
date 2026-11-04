@@ -21,18 +21,18 @@ Items Base는 게임에 아이템과 그것을 담을 가방을 줍니다. 아�
 
 ## 아이템 정의
 
-아이템은 mod의 `items/` 폴더에 있는 kind `item` JSON 파일이고, 그림은 그 옆에 둡니다. 위 사진의 버섯(RPG Demo 것)입니다.
+아이템은 mod의 `items/` 폴더에 있는 kind `item` JSON 파일이고, 그림은 그 옆에 둡니다. 위 사진의 버섯(RPG Plus 것)입니다.
 
 ```json
 {
   "Kind": "item",
   "Items": [
     {
-      "Id": "rpg_demo/mushroom",
-      "Name": "rpg_demo/item/mushroom/name",
-      "Description": "rpg_demo/item/mushroom/desc",
+      "Id": "rpg_plus/mushroom",
+      "Name": "rpg_plus/item/mushroom/name",
+      "Description": "rpg_plus/item/mushroom/desc",
       "Cost": 2,
-      "Sprite": "rpg_demo/forest_mushroom",
+      "Sprite": "rpg_plus/forest_mushroom",
       "ItemType": "Food,TargetUsed",
       "ItemAction": "action/heal",
       "heal": 5,
@@ -44,7 +44,7 @@ Items Base는 게임에 아이템과 그것을 담을 가방을 줍니다. 아�
 
 - `Name`, `Description` — 번역 키. 세부 정보에 표시됩니다.
 - `Cost` — 가격. 상점이 사용합니다.
-- `Sprite` — 그림 `items/rpg_demo/forest_mushroom.png`.
+- `Sprite` — 그림 `items/rpg_plus/forest_mushroom.png`.
 - `ItemType` — 하나 이상의 종류를 쉼표로 나열합니다. `Food`, `Resource`, `Quest`, `Recipe`, `Used`(대상 없이 사용), `TargetUsed`(파티원에게 사용), `CantDrop`.
 - `ItemAction` — 사용하면 무엇을 하는지. `action/heal`은 아이템의 `heal` 값만큼 체력을 회복합니다. 최대치를 넘지 않고, 쓰러진 캐릭터에게는 결코 쓰이지 않습니다. 다른 mod도 액션을 추가합니다. 예를 들어 equipment의 `action/equip`.
 - 그 밖의 키(`heal`, `verb`)는 아이템 속성입니다. 액션이 읽고 세부 정보에도 나열됩니다. `verb`는 액션 버튼의 이름을 정합니다.
@@ -52,9 +52,9 @@ Items Base는 게임에 아이템과 그것을 담을 가방을 줍니다. 아�
 ## 시나리오 속 아이템
 
 ```scenario
-action item.add id=rpg_demo/mushroom count=2
-when "item('rpg_demo/mushroom') >= 2" -> :enough
-action item.remove id=rpg_demo/mushroom count=2
+action item.add id=rpg_plus/mushroom count=2
+when "item('rpg_plus/mushroom') >= 2" -> :enough
+action item.remove id=rpg_plus/mushroom count=2
 ```
 
 - `item.add`는 아이템을 가방에 넣습니다(상자, 선물, 맵의 줍기 아이템). `count`의 기본값은 1입니다.

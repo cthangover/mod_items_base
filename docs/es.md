@@ -21,18 +21,18 @@ Si una acción no puede hacerse — por ejemplo, el objetivo ya tiene la salud l
 
 ## Una definición de objeto
 
-Los objetos son archivos JSON de tipo `item` en la carpeta `items/` de un mod, con la imagen al lado. Esta es la seta de las imágenes de arriba (de RPG Demo):
+Los objetos son archivos JSON de tipo `item` en la carpeta `items/` de un mod, con la imagen al lado. Esta es la seta de las imágenes de arriba (de RPG Plus):
 
 ```json
 {
   "Kind": "item",
   "Items": [
     {
-      "Id": "rpg_demo/mushroom",
-      "Name": "rpg_demo/item/mushroom/name",
-      "Description": "rpg_demo/item/mushroom/desc",
+      "Id": "rpg_plus/mushroom",
+      "Name": "rpg_plus/item/mushroom/name",
+      "Description": "rpg_plus/item/mushroom/desc",
       "Cost": 2,
-      "Sprite": "rpg_demo/forest_mushroom",
+      "Sprite": "rpg_plus/forest_mushroom",
       "ItemType": "Food,TargetUsed",
       "ItemAction": "action/heal",
       "heal": 5,
@@ -44,7 +44,7 @@ Los objetos son archivos JSON de tipo `item` en la carpeta `items/` de un mod, c
 
 - `Name`, `Description` — claves de traducción, mostradas en los detalles.
 - `Cost` — el precio, que usan las tiendas.
-- `Sprite` — la imagen `items/rpg_demo/forest_mushroom.png`.
+- `Sprite` — la imagen `items/rpg_plus/forest_mushroom.png`.
 - `ItemType` — uno o más tipos, separados por comas: `Food`, `Resource`, `Quest`, `Recipe`, `Used` (se usa sin objetivo), `TargetUsed` (se usa sobre un miembro del grupo), `CantDrop`.
 - `ItemAction` — qué hace al usarse. `action/heal` restaura salud según el valor `heal` del objeto, sin pasar del máximo y nunca sobre un caído. Otros mods añaden acciones, por ejemplo el `action/equip` de equipment.
 - Cualquier otra clave (`heal`, `verb`) es una propiedad del objeto: las acciones la leen y los detalles la enumeran. `verb` nombra el botón de acción.
@@ -52,9 +52,9 @@ Los objetos son archivos JSON de tipo `item` en la carpeta `items/` de un mod, c
 ## Objetos en escenarios
 
 ```scenario
-action item.add id=rpg_demo/mushroom count=2
-when "item('rpg_demo/mushroom') >= 2" -> :enough
-action item.remove id=rpg_demo/mushroom count=2
+action item.add id=rpg_plus/mushroom count=2
+when "item('rpg_plus/mushroom') >= 2" -> :enough
+action item.remove id=rpg_plus/mushroom count=2
 ```
 
 - `item.add` mete objetos en la bolsa (un cofre, un regalo, una recogida en el mapa); `count` vale 1 por defecto.
