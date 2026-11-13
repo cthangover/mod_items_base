@@ -27,9 +27,12 @@ namespace Mods.InventoryTest
     /// </summary>
     public partial class InventoryTestDriverNode : Node
     {
+        private int readinessToken = int.MinValue;
+        private ulong readinessStarted;
+        private ulong readinessFrame;
         private const string ResultName = "inventory_test";
         private const string PanelEntryId = "inventory";
-        private const float TickSeconds = 0.4f;
+        private const float TickSeconds = 0.05f;
         private const float DefaultTimeoutSeconds = 60f;
 
         private readonly float? timeoutSeconds;
@@ -85,8 +88,26 @@ namespace Mods.InventoryTest
             }
         }
 
+        // Deferred UI/scene work must finish before the original assertions run.
+        private bool WaitForReadyFrames(int token, bool ready, double timeoutSeconds = 30)
+        {
+            var now = global::Godot.Time.GetTicksMsec();
+            if (readinessToken != token)
+            {
+                readinessToken = token;
+                readinessStarted = now;
+                readinessFrame = 0;
+            }
+            if (now - readinessStarted > timeoutSeconds * 1000)
+                throw new global::System.TimeoutException($"readiness at step {token}: scene/UI did not become ready");
+            if (!ready) { readinessFrame = 0; return false; }
+            if (readinessFrame == 0) readinessFrame = global::Godot.Engine.GetProcessFrames();
+            return global::Godot.Engine.GetProcessFrames() - readinessFrame >= 2;
+        }
+
         private void RunStep()
         {
+            if (!WaitForReadyFrames(step, Boot.IsReady && GetTree().CurrentScene != null && (step < 4 || panel != null && panel.IsInsideTree()), 30)) return;
             // Шаг 0: ждём готовности — бут завершён и сцена вошла в дерево.
             if (step == 0)
             {
