@@ -1,7 +1,7 @@
 {
   "id": "items_base",
   "name": "Items Base",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "author": "ct",
   "description": "Items and the inventory: what an item is, the bag panel, what is saved, and scenario commands to give, take and check items.",
   "category": "gameplay",
@@ -11,7 +11,7 @@
   "test_sources": [
     "tests/*.cs"
   ],
-  "depends": ["shell2d_base>=1", "ui_base>=1"],
+  "depends": ["shell2d_base>=0.1.0", "ui_base>=0.1.0"],
   "test_suites": [
     {"id": "inventory", "activate": ["--itest=inventory"]}
   ],
