@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "author": "ct",
   "description": "Items and the inventory: what an item is, the bag panel, what is saved, and scenario commands to give, take and check items.",
-  "category": "gameplay",
+  "categories": ["gameplay"],
   "sources": [
     "src/**/*.cs"
   ],
