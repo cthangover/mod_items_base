@@ -1,19 +1,19 @@
-using System;
-using System.Collections.Generic;
-using Cthangover.Core.Audio;
-using Cthangover.Core.Characters;
-using Cthangover.Core.Factories.Impls;
-using Cthangover.Core.Items;
-using Cthangover.Core.Scenes;
-using Cthangover.Core.Settings;
-using Cthangover.Core.UI.Theming;
-using Godot;
-
-using Cthangover.Mods.Interface.Base.Lists;
-using Cthangover.Mods.Items;
-using Cthangover.Mods.Interface.Theming;
 namespace Cthangover.Core.UI.Inventory
 {
+    using System;
+    using System.Collections.Generic;
+    using Cthangover.Core.Audio;
+    using Cthangover.Core.Characters;
+    using Cthangover.Core.Factories.Impls;
+    using Cthangover.Core.Items;
+    using Cthangover.Core.Scenes;
+    using Cthangover.Core.Settings;
+    using Cthangover.Core.UI.Theming;
+    using Godot;
+    using Cthangover.Mods.Interface.Base.Lists;
+    using Cthangover.Mods.Items;
+    using Cthangover.Mods.Interface.Theming;
+
     /// <summary>
     /// Full-screen inventory panel following mockup 1: a header with type
     /// tabs and battle action-point pips, a search/sort toolbar, a six-column
@@ -254,11 +254,17 @@ namespace Cthangover.Core.UI.Inventory
                 return;
 
             var previousId = _selectedContainer?.Item?.ID;
+            var previousInstance = (_selectedContainer as InventoryInstanceContainer)?.InstanceId;
             ClearGrid();
             ClearSelection();
             RebuildGrid();
 
-            if (previousId != null)
+            if (RestoreOccurrenceSelection(previousInstance))
+            {
+                return;
+            }
+
+            if (previousInstance == null && previousId != null)
             {
                 var container = GameData.Instance.Runtime.Inventory.TryGet(previousId);
                 if (container != null)
@@ -502,6 +508,7 @@ namespace Cthangover.Core.UI.Inventory
 
         private void ClearSelection()
         {
+            occurrenceDrop = null;
             if (_selectedCell != null)
             {
                 _selectedCell.SetSelected(false);
@@ -613,6 +620,7 @@ namespace Cthangover.Core.UI.Inventory
 
             grid.AddChild(MakeStatCell(InventoryItemUi.Translate("ui/inventory/stack"), "×" + container.Count));
             grid.AddChild(MakeStatCell(InventoryItemUi.Translate("ui/inventory/id"), item.ID));
+            AddOccurrenceIdentity(grid, container);
             grid.AddChild(MakeStatCell(InventoryItemUi.Translate("ui/inventory/action"), item.ItemAction?.ID ?? "—"));
             grid.AddChild(MakeStatCell(InventoryItemUi.Translate("ui/inventory/verb"), InventoryItemUi.Translate(InventoryItemUi.VerbKey(item))));
             return wrapper;
@@ -679,7 +687,8 @@ namespace Cthangover.Core.UI.Inventory
             var block = new VBoxContainer();
             block.AddThemeConstantOverride("separation", 9);
 
-            var usable = InventoryItemUi.IsUsable(item);
+            var occurrence = container as InventoryInstanceContainer;
+            var usable = occurrence == null && InventoryItemUi.IsUsable(item);
             var verb = InventoryItemUi.Translate(InventoryItemUi.VerbKey(item));
 
             var useButton = new Button();
@@ -694,15 +703,23 @@ namespace Cthangover.Core.UI.Inventory
 
             if (!usable)
             {
-                var hint = MakeLabel(InventoryItemUi.Translate("ui/inventory/no_action"), 12, FaintColor);
+                var hintKey = occurrence == null ? "ui/inventory/no_action" : "ui/inventory/instance_use_unavailable";
+                var hint = MakeLabel(InventoryItemUi.Translate(hintKey), 12, FaintColor);
                 hint.AutowrapMode = TextServer.AutowrapMode.WordSmart;
                 block.AddChild(hint);
             }
 
             var canDrop = InventoryItemUi.CanDrop(item);
+            string dropReason = null;
+            if (occurrence != null)
+            {
+                canDrop = CanDropOccurrence(occurrence, out dropReason);
+            }
+
             var dropButton = new Button();
             dropButton.Text = InventoryItemUi.Translate(canDrop ? "ui/inventory/drop" : "ui/inventory/drop_cant");
             dropButton.Disabled = !canDrop;
+            dropButton.TooltipText = dropReason == null ? "" : InventoryItemUi.Translate(dropReason);
             dropButton.FocusMode = FocusModeEnum.None;
             StyleButton(dropButton, false, true);
             dropButton.Pressed += OnDropClicked;
@@ -870,6 +887,12 @@ namespace Cthangover.Core.UI.Inventory
 
         private void OnUseClicked()
         {
+            if (_selectedContainer is InventoryInstanceContainer)
+            {
+                RefuseOccurrenceUse();
+                return;
+            }
+
             var container = _selectedContainer;
             var item = container?.Item;
             if (item?.ItemAction == null || !InventoryItemUi.IsUsable(item))
@@ -906,6 +929,14 @@ namespace Cthangover.Core.UI.Inventory
 
         private void OnDropClicked()
         {
+            if (_selectedContainer is InventoryInstanceContainer occurrence
+                && !PrepareOccurrenceDrop(occurrence, out var reason))
+            {
+                SetMessage(MessageKind.Error, InventoryItemUi.Translate(reason));
+                BuildPassport();
+                return;
+            }
+
             if (_selectedContainer?.Item == null)
                 return;
 
@@ -953,6 +984,12 @@ namespace Cthangover.Core.UI.Inventory
 
         private void OnDropConfirm()
         {
+            if (_selectedContainer is InventoryInstanceContainer occurrence)
+            {
+                DropOccurrence(occurrence);
+                return;
+            }
+
             var container = _selectedContainer;
             var item = container?.Item;
             if (item == null || !InventoryItemUi.CanDrop(item))
@@ -972,6 +1009,12 @@ namespace Cthangover.Core.UI.Inventory
 
         private void OnTargetSelected(CharacterInfoData info)
         {
+            if (_selectedContainer is InventoryInstanceContainer)
+            {
+                RefuseOccurrenceUse();
+                return;
+            }
+
             var item = _selectedContainer?.Item;
             if (item?.ItemAction == null)
                 return;

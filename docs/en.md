@@ -71,3 +71,21 @@ Recipes (kind `recipe`) list `Input` and `Output` items with counts. This mod ke
 2. **No action button.** The item needs `Used` or `TargetUsed` in `ItemType` and an `ItemAction`.
 3. **Using does nothing and the item stays.** The action refused: for healing, the target is at full health or has fallen.
 4. **`item.add` adds nothing.** The id is unknown; check the `Id` in the item file.
+
+## Unique occurrences from a 3D world
+
+The optional scene3d integration keeps a unique occurrence as a separate row in
+the existing bag. Its passport exposes the persistent ID; equal blueprints never
+merge. Ordinary Add/Remove/TryGet/CheckCount address ordinary quantity rows only.
+Consumption, equipment and trading are unavailable for a unique row and never
+convert it into stock.
+
+Drop and its confirmation delegate placement to the 3D owner. Refusal keeps the
+occurrence in the bag; success returns its exact identity, recipe, payload and
+origin to a validated support. Authors use scene3d_editor’s Pickup item binding
+form; no hand-authored JSON is required.
+
+An unavailable item definition does not erase its saved descriptor. Counterpart
+data and receipts remain until their owners reconcile. Quantity lots,
+split/merge lineage and recovery after the main dispatcher rejects a slot are
+not added by this integration; the last boundary is still being completed.
