@@ -245,11 +245,18 @@ namespace Cthangover.Core.Items
             }
 
             SwapInstanceState(next, nextItems, nextRows, mutationRevision + 1);
+            retainedInstances = null;
         }
 
         private bool InstanceAdmission(string operation, string request, long revision, out string reason)
         {
             reason = null;
+            if (!InstancesAvailable)
+            {
+                reason = "inventory/instances/unavailable";
+                return false;
+            }
+
             if (revision != mutationRevision)
             {
                 reason = "inventory/instances/stale_revision";

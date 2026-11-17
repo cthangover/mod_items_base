@@ -130,7 +130,8 @@ namespace Cthangover.Core.Items
             handler = null;
             registration = Guid.Empty;
             reason = "inventory/instances/unavailable";
-            if (inventory == null || GameEnvironment.IsRuntime && !ReferenceEquals(GameData.Instance.Runtime.Inventory, inventory)
+            if (inventory == null || !inventory.InstancesAvailable
+                || GameEnvironment.IsRuntime && !ReferenceEquals(GameData.Instance.Runtime.Inventory, inventory)
                 || !inventory.TryGetInstance(id, out data))
             {
                 return false;

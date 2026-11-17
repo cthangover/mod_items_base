@@ -44,14 +44,18 @@ namespace Cthangover.Mods.Items
             if (runtime.Inventory is Inventory inventory)
             {
                 saved.AddRange(inventory.UnresolvedItems);
-                var identities = inventory.CaptureInstances();
-                identities.Validate();
-                if (identities.Records.Count > 0 || identities.Receipts.Count > 0 || identities.Extra.Count > 0)
+                if (!inventory.WriteUnavailableInstances(slot))
                 {
-                    slot.Data[InstancesBlob] = new DataBlob(1, identities);
+                    var identities = inventory.CaptureInstances();
+                    identities.Validate();
+                    if (identities.Records.Count > 0 || identities.Receipts.Count > 0 || identities.Extra.Count > 0)
+                    {
+                        slot.Data[InstancesBlob] = new DataBlob(1, identities);
+                    }
                 }
             }
 
+            slot.Data ??= new Dictionary<string, DataBlob>();
             slot.Data[InventoryBlob] = new DataBlob(1, saved);
             slot.Data[RecipesBlob] = new DataBlob(1, new List<string>(runtime.RecipeData.Data));
         }
@@ -61,6 +65,50 @@ namespace Cthangover.Mods.Items
         /// slot before stock changes, allowing the normal dispatcher to retain it dormant independently of scene3d.
         /// </summary>
         public bool OnLoad(ModSlot slot, out string errorMessage)
+        {
+            if (!LoadCandidate(slot, out errorMessage))
+            {
+                return false;
+            }
+
+            // Older empty live stock must not shadow an opaque dormant occurrence ledger.
+            if (slot != null && (slot.Data == null || !slot.Data.ContainsKey(InstancesBlob))
+                && TryRetained(out var retained, out var detached) && detached.Data?.ContainsKey(InstancesBlob) == true
+                && GameData.Instance.Runtime.Inventory is Inventory inventory)
+            {
+                inventory.RetainUnavailableInstances(retained);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Distinguishes genuine absence from this dispatch's rejection. Only ordinary stock is restored from a
+        /// detached copy; the opaque identity payload stays owned by Core and is emitted without interpretation.
+        /// </summary>
+        public void OnJoinedExistingGame()
+        {
+            if (!TryRetained(out var retained, out var detached)
+                || GameData.Instance.Runtime.Inventory is not Inventory inventory)
+            {
+                return;
+            }
+
+            detached.Data?.Remove(InstancesBlob);
+            LoadCandidate(detached, out _);
+            inventory.RetainUnavailableInstances(retained);
+        }
+
+        private static bool TryRetained(out RetainedSaveSlot retained, out ModSlot detached)
+        {
+            retained = null;
+            detached = new ModSlot { Metadata = new ModMetadata { ModId = "items_base" } };
+            var context = SaveService.ApplyingDormancy;
+            return context != null && context.TryRetainDormantSlot("items_base", out retained)
+                && retained.TryCopyTo(detached);
+        }
+
+        private static bool LoadCandidate(ModSlot slot, out string errorMessage)
         {
             errorMessage = null;
             var runtime = GameData.Instance?.Runtime;

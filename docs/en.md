@@ -86,6 +86,9 @@ origin to a validated support. Authors use scene3d_editor’s Pickup item bindin
 form; no hand-authored JSON is required.
 
 An unavailable item definition does not erase its saved descriptor. Counterpart
-data and receipts remain until their owners reconcile. Quantity lots,
-split/merge lineage and recovery after the main dispatcher rejects a slot are
-not added by this integration; the last boundary is still being completed.
+data and receipts remain until their owners reconcile. When the main dispatcher
+rejects identity data, unique operations stay unavailable and Core retains the
+original payload. Saving copies it into a new slot without interpreting or
+mutating it, then adds current ordinary stock and recipes. An empty/null legacy
+live slot cannot erase opaque older history. Quantity lots and split/merge
+lineage are not added by this integration.
