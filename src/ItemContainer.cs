@@ -1,5 +1,7 @@
 namespace Cthangover.Core.Items
 {
+    using System;
+
     /// <summary>
     /// Concrete inventory slot holding a shared <c>IItem</c> reference
     /// and a mutable stack count. The item reference is shared across
@@ -10,10 +12,52 @@ namespace Cthangover.Core.Items
     /// </summary>
     public class ItemContainer : IItemContainer
     {
-        /// <summary>The shared item definition held by this slot (one instance per item type, not per stack).</summary>
-        public IItem Item { get; set; }
-        /// <summary>Stack size; <see cref="Inventory"/> deletes the container when it reaches zero.</summary>
-        public int Count { get; set; }
-    }
+        private IItem item;
+        /// <summary>Stable group identity, placement and origin quantities, saved by the existing items owner.</summary>
+        public InventoryStackData Storage { get; set; } = new()
+        {
+            Id = "stack/" + Guid.NewGuid().ToString("N")
+        };
 
+        /// <summary>The shared item definition held by this slot (one instance per item type, not per stack).</summary>
+        public IItem Item
+        {
+            get
+            {
+                return item;
+            }
+
+            set
+            {
+                item = value;
+                Storage.ItemId = value?.ID;
+                Storage.Size = InventoryItemSize.From(value);
+            }
+        }
+
+        /// <summary>Stack size; <see cref = "Inventory"/> deletes the container when it reaches zero.</summary>
+        public int Count
+        {
+            get
+            {
+                return Storage.Count;
+            }
+
+            set
+            {
+                if (value == Storage.Count)
+                {
+                    return;
+                }
+
+                // Legacy row setters remain supported, but cannot manufacture a false conserved lineage.
+                Storage.Count = value;
+                Storage.Origins.Clear();
+                if (value > 0)
+                {
+                    Storage.Origins["legacy/" + Guid.NewGuid().ToString("N")] = value;
+                }
+            }
+        }
+    }
 }

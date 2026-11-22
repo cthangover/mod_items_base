@@ -7,9 +7,8 @@ namespace Cthangover.Core.Items
     using Cthangover.Core.Utils;
 
     /// <summary>
-    /// The existing ordered bag owns ordinary stacks and optional protected occurrences. Legacy item-ID
-    /// operations address fungible stock only; an occurrence cannot be consumed, merged or discarded by count.
-    /// Identity-aware adapters use prepared changes and publish observers after their counterpart commits.
+    /// The bag owns persistent groups and world occurrences in the same storage. Count operations sum all
+    /// accessible groups; mutations validate geometry and domain ownership before publication.
     /// </summary>
     public partial class Inventory : IInventory
     {
@@ -40,25 +39,25 @@ namespace Cthangover.Core.Items
         /// <summary>Successful changes notify the bag; unique changes defer this until both owners commit.</summary>
         public event Action<string, int> Change;
 
-        /// <summary>True when ordinary stock contains this item; protected occurrences use TryGetInstance.</summary>
+        /// <summary>True when the accessible bag contains this blueprint, including world occurrences.</summary>
         public bool HasItem(IItem item)
         {
             return item != null && HasItem(item.ID);
         }
 
-        /// <summary>True when ordinary stock contains this blueprint, preserving legacy count semantics.</summary>
+        /// <summary>True when any accessible bag group contains this blueprint.</summary>
         public bool HasItem(string id)
         {
             return TryGet(id) != null;
         }
 
-        /// <summary>Returns the ordinary stack for this blueprint; unique rows are never selected by type.</summary>
+        /// <summary>Returns the first accessible group; identity-sensitive callers retain StackId.</summary>
         public IItemContainer TryGet(IItem item)
         {
             return item == null ? null : TryGet(item.ID);
         }
 
-        /// <summary>Returns the first ordinary stack, or null without consuming an occurrence of the same type.</summary>
+        /// <summary>Returns the first accessible group without modifying quantity or placement.</summary>
         public IItemContainer TryGet(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -68,7 +67,7 @@ namespace Cthangover.Core.Items
 
             foreach (var container in Items)
             {
-                if (container is not InventoryInstanceContainer && container.Item != null && container.Item.ID == id)
+                if (container.Item != null && container.Count > 0 && container.Item.ID == id)
                 {
                     return container;
                 }
@@ -77,98 +76,63 @@ namespace Cthangover.Core.Items
             return null;
         }
 
-        /// <summary>Ordinary fungible count; protected occurrences do not satisfy count-only crafting or spending.</summary>
+        /// <summary>Accessible quantity summed over ordinary groups and world occurrences.</summary>
         public int CheckCount(IItem item)
         {
             return item == null ? 0 : CheckCount(item.ID);
         }
 
-        /// <summary>Preserves the existing first-stack count contract for ordinary item-ID clients.</summary>
+        /// <summary>Sums every accessible group; equipment and other compartments remain separate.</summary>
         public int CheckCount(string id)
         {
-            return TryGet(id)?.Count ?? 0;
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return 0;
+            }
+
+            long total = 0;
+            foreach (var row in Items)
+            {
+                if (row.Item?.ID == id)
+                {
+                    total += row.Count;
+                }
+            }
+
+            return checked((int)total);
         }
 
-        /// <summary>Adds ordinary stock; the shared blueprint overload never turns an occurrence into a stack.</summary>
+        /// <summary>Adds stock through the same capacity and group rules used by crafting and pickup.</summary>
         public void Add(IItem item, int count = 1)
         {
-            if (item != null)
+            if (item != null && !TryAdd(item, count, out var reason))
             {
-                Add(item.ID, count);
+                GameLogger.Log("INVENTORY", $"Add('{item.ID}', {count}) refused: {reason}", LogLevel.Warning);
             }
         }
 
-        /// <summary>
-        /// Stacks only with ordinary stock or resolves a new ordinary row. Nonpositive counts and unknown IDs
-        /// retain their previous behavior; successful changes invalidate outstanding prepared identity tokens.
-        /// </summary>
+        /// <summary>Resolves a blueprint and adds the entire quantity, or leaves all stock unchanged.</summary>
         public void Add(string id, int count = 1)
         {
             if (count <= 0)
             {
-                GameLogger.Log("INVENTORY", $"Add('{id}', {count}): count must be positive, ignored", LogLevel.Warning);
                 return;
             }
 
-            var container = TryGet(id);
-            if (container != null)
-            {
-                container.Count += count;
-                mutationRevision++;
-                Change?.Invoke(id, count);
-                PublishInventoryChanged(id, count, container.Count);
-                return;
-            }
-
-            var item = ItemFactory.Instance.Get(id);
-            if (item != null)
-            {
-                container = new ItemContainer
-                {
-                    Item = item,
-                    Count = count
-                };
-                Items.Add(container);
-                mutationRevision++;
-                Change?.Invoke(id, count);
-                PublishInventoryChanged(id, count, count);
-            }
+            Add(ItemFactory.Instance.Get(id), count);
         }
 
-        /// <summary>Removes ordinary stock; unique occurrence removal requires its prepared identity API.</summary>
+        /// <summary>Consumes the requested quantity through the unified transaction.</summary>
         public bool Remove(IItem item, int count = 1)
         {
             return item != null && Remove(item.ID, count);
         }
 
-        /// <summary>Short or nonpositive requests preserve stock; a depleted ordinary row is removed as before.</summary>
+        /// <summary>Consumes across groups in bag order. Insufficient stock or a failed owner admission changes nothing.</summary>
         public bool Remove(string id, int count = 1)
         {
-            if (count <= 0)
-            {
-                return false;
-            }
-
-            var container = TryGet(id);
-            if (container == null || container.Count < count)
-            {
-                return false;
-            }
-
-            var remaining = container.Count - count;
-            if (remaining == 0)
-            {
-                Items.Remove(container);
-            }
-            else
-            {
-                container.Count = remaining;
-            }
-
-            mutationRevision++;
-            Change?.Invoke(id, -count);
-            PublishInventoryChanged(id, -count, remaining);
-            return true;
+            return !string.IsNullOrWhiteSpace(id) && count > 0
+                && TryExchange(new Dictionary<string, int> { [id] = count }, new Dictionary<string, int>(), out _);
         }
 
         private static void PublishInventoryChanged(string id, int delta, int count)

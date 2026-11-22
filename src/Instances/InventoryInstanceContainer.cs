@@ -13,6 +13,11 @@ namespace Cthangover.Core.Items
         /// <summary>Stable occurrence key used for selection and identity-aware actions, rather than Item.ID.</summary>
         public string InstanceId { get; }
 
+        /// <summary>
+        /// Placement within the same inventory storage as ordinary groups; the domain still owns this occurrence's identity.
+        /// </summary>
+        public InventoryStackData Storage { get; internal set; }
+
         /// <summary>The borrowed shared blueprint cannot be reassigned through the legacy mutable container API.</summary>
         public IItem Item
         {
@@ -49,6 +54,14 @@ namespace Cthangover.Core.Items
         {
             InstanceId = id;
             this.item = item ?? throw new ArgumentNullException(nameof(item));
+            Storage = new InventoryStackData
+            {
+                Id = id,
+                ItemId = item.ID,
+                Count = 1,
+                Size = InventoryItemSize.From(item)
+            };
+            Storage.Origins[id] = 1;
         }
     }
 }

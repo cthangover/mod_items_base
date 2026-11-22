@@ -156,6 +156,14 @@ namespace Cthangover.Core.Items
                 after.Validate();
                 var rows = new Dictionary<string, InventoryInstanceContainer>(instanceRows, StringComparer.Ordinal);
                 var container = new InventoryInstanceContainer(frozen.Id, item);
+                var layout = CaptureStorage();
+                container.Storage.ExternalOwner = frozen.Owner;
+                if (!InventoryStorage.Place(layout, container.Storage))
+                {
+                    reason = "inventory/storage/no_space";
+                    return false;
+                }
+
                 rows.Add(frozen.Id, container);
                 var nextItems = new List<IItemContainer>(before) { container };
                 change = new InventoryInstanceChange(this, baseline, after, before, nextItems, instanceRows, rows, receipt);
@@ -187,6 +195,12 @@ namespace Cthangover.Core.Items
             if (source.Revision != expectedInstanceRevision || source.Revision == long.MaxValue)
             {
                 reason = "inventory/instances/stale_revision";
+                return false;
+            }
+
+            if (instanceRows.TryGetValue(id, out var selected) && selected.Storage.Container != "player")
+            {
+                reason = "inventory/instances/unavailable";
                 return false;
             }
 
@@ -242,6 +256,11 @@ namespace Cthangover.Core.Items
                     nextRows.Add(entry.Id, row);
                     nextItems.Add(row);
                 }
+            }
+
+            if (ordinaryRows != null)
+            {
+                storage = new InventoryStorageState();
             }
 
             SwapInstanceState(next, nextItems, nextRows, mutationRevision + 1);
@@ -366,7 +385,7 @@ namespace Cthangover.Core.Items
 
             foreach (var pair in instanceRows)
             {
-                if (!present.Contains(pair.Key))
+                if (!present.Contains(pair.Key) && pair.Value.Storage.Container == "player")
                 {
                     items.Add(pair.Value);
                     repaired = true;
@@ -421,10 +440,10 @@ namespace Cthangover.Core.Items
                 return;
             }
 
-            // Unique ownership changed, but fungible stock did not. Legacy listeners receive a zero stock delta.
+            var delta = receipt.Inserted ? 1 : -1;
             try
             {
-                Change?.Invoke(receipt.ItemId, 0);
+                Change?.Invoke(receipt.ItemId, delta);
             }
             catch (Exception error)
             {
@@ -438,7 +457,7 @@ namespace Cthangover.Core.Items
 
             try
             {
-                PublishInventoryChanged(receipt.ItemId, 0, CheckCount(receipt.ItemId));
+                PublishInventoryChanged(receipt.ItemId, delta, CheckCount(receipt.ItemId));
             }
             catch (Exception error)
             {

@@ -18,6 +18,7 @@ namespace Cthangover.Mods.Items
         private const string InventoryBlob = "Inventory";
         private const string RecipesBlob = "Recipes";
         private const string InstancesBlob = "Instances";
+        private const string StorageBlob = "Storage";
 
         /// <summary>Writes ordinary stock once and retains unresolved unique descriptors and receipts in their own blob.</summary>
         public void OnSave(ModSlot slot)
@@ -29,6 +30,7 @@ namespace Cthangover.Mods.Items
             }
 
             var saved = new List<CItem>();
+            slot.Data ??= new Dictionary<string, DataBlob>();
             foreach (var container in runtime.Inventory.Items)
             {
                 if (container is not InventoryInstanceContainer && container.Item != null)
@@ -46,6 +48,7 @@ namespace Cthangover.Mods.Items
                 saved.AddRange(inventory.UnresolvedItems);
                 if (!inventory.WriteUnavailableInstances(slot))
                 {
+                    slot.Data[StorageBlob] = new DataBlob(1, inventory.CaptureStorage());
                     var identities = inventory.CaptureInstances();
                     identities.Validate();
                     if (identities.Records.Count > 0 || identities.Receipts.Count > 0 || identities.Extra.Count > 0)
@@ -95,6 +98,7 @@ namespace Cthangover.Mods.Items
             }
 
             detached.Data?.Remove(InstancesBlob);
+            detached.Data?.Remove(StorageBlob);
             LoadCandidate(detached, out _);
             inventory.RetainUnavailableInstances(retained);
         }
@@ -121,6 +125,18 @@ namespace Cthangover.Mods.Items
             {
                 var hasStock = slot.Data.TryGetValue(InventoryBlob, out var stockBlob);
                 var hasInstances = slot.Data.TryGetValue(InstancesBlob, out var identityBlob);
+                InventoryStorageState storage = null;
+                if (slot.Data.TryGetValue(StorageBlob, out var storageBlob))
+                {
+                    if (storageBlob.Version != 1 || runtime.Inventory is not Inventory)
+                    {
+                        throw new ArgumentException("Unsupported inventory storage owner or version");
+                    }
+
+                    storage = storageBlob.ReadJson<InventoryStorageState>()
+                        ?? throw new ArgumentException("Missing inventory storage data");
+                    storage.Validate();
+                }
                 InventoryInstanceState identities = null;
                 if (hasInstances)
                 {
@@ -148,11 +164,23 @@ namespace Cthangover.Mods.Items
                         var item = ItemFactory.Instance.Get(saved.ID);
                         if (item != null)
                         {
-                            containers.Add(new ItemContainer
+                            if (saved.Count < 1)
                             {
-                                Item = item,
-                                Count = saved.Count
-                            });
+                                throw new ArgumentException("Saved inventory quantity must be positive");
+                            }
+
+                            var limit = InventoryItemSize.From(item).StackLimit;
+                            var remaining = saved.Count;
+                            while (remaining > 0)
+                            {
+                                var count = Math.Min(remaining, limit);
+                                containers.Add(new ItemContainer
+                                {
+                                    Item = item,
+                                    Count = count
+                                });
+                                remaining -= count;
+                            }
                         }
                         else
                         {
@@ -169,7 +197,11 @@ namespace Cthangover.Mods.Items
                     recipes = new HashSet<string>(recipeBlob.ReadJson<List<string>>() ?? new List<string>());
                 }
 
-                if (runtime.Inventory is Inventory inventory && identities != null)
+                if (runtime.Inventory is Inventory storageOwner && storage != null)
+                {
+                    storageOwner.RestoreStorage(storage, identities ?? new InventoryInstanceState());
+                }
+                else if (runtime.Inventory is Inventory inventory && identities != null)
                 {
                     inventory.RestoreInstances(identities, containers);
                 }
@@ -182,6 +214,10 @@ namespace Cthangover.Mods.Items
                 {
                     owner.UnresolvedItems.Clear();
                     owner.UnresolvedItems.AddRange(unresolved);
+                    if (storage == null)
+                    {
+                        owner.ImportUnresolvedStorage(unresolved);
+                    }
                 }
 
                 if (recipes != null)

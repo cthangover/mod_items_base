@@ -22,6 +22,7 @@ namespace Cthangover.Core.Items
         private readonly IItem[] observedItems;
         private readonly int[] observedCounts;
         private readonly long revision;
+        private readonly string observedStorage;
         private readonly InventoryInstanceReceipt receipt;
         private bool applied;
         private bool published;
@@ -42,6 +43,7 @@ namespace Cthangover.Core.Items
             this.afterRows = afterRows;
             this.receipt = receipt;
             revision = owner.Revision;
+            observedStorage = JsonSerializer.Serialize(owner.CaptureStorage());
             observedItems = new IItem[beforeItems.Count];
             observedCounts = new int[beforeItems.Count];
             for (var i = 0; i < beforeItems.Count; i++)
@@ -69,7 +71,8 @@ namespace Cthangover.Core.Items
             get
             {
                 return !disposed && !applied && owner.MatchesInstanceChange(before, revision,
-                    observedRows, observedItems, observedCounts);
+                    observedRows, observedItems, observedCounts)
+                    && JsonSerializer.Serialize(owner.CaptureStorage()) == observedStorage && CanApply;
             }
         }
 
