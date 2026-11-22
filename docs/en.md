@@ -12,8 +12,8 @@ Open it with the bag icon on the toolbar. Click an item on the left to see its d
 - **Details** show the name, type badges, price, description, stack size, id and the item's own properties.
 - **The action button** is named by the item: **Use**, **Eat** for food, **Apply to target**, **Learn recipe**, or a verb the item defines (the mushroom says **Eat** because of its `verb`).
 - **Targeted items** ask whom to use them on: pick a party member, or **Cancel**.
-- **Drop** throws a stack away after a confirmation; key items cannot be dropped.
-- In a battle every use or drop costs the active character one action point; outside battle it is free.
+- **Drop** asks for a quantity. In a configured 3D game its domain handler places the group on the ground; the legacy 2D route discards the confirmed quantity. Key items cannot be dropped.
+- In legacy 2D battle, a successful use or drop costs the active character one action point; refusal spends none. A 3D domain handler applies its own gameplay conditions.
 
 ![After choosing the Hero: the stack is down to ×1 and the panel reports "Applied: Forest mushroom → Hero".](assets/after-use.jpg)
 
@@ -195,3 +195,5 @@ compatible merges with exact origin contributions. Receipts retain the external
 reference and transferred portions. Preparation does not mutate live state: the
 coordinator validates both participants, swaps both, then publishes. This is an
 adapter contract, not an extra unlimited player pocket.
+
+Ordinary drop supports mod-owned `IInventoryGroupDropHandler` providers. A provider selects the active domain, checks permission and transfers the selected quantity. Confirmation captures the current bag, full group data and provider generation. An unloaded or unready 3D provider never turns a transfer into discard. Ground representations are described in [scene3d_base](../../../mods_private/scene3d_base/docs/en.md).
