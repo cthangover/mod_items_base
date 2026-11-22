@@ -72,23 +72,67 @@ Recipes (kind `recipe`) list `Input` and `Output` items with counts. This mod ke
 3. **Using does nothing and the item stays.** The action refused: for healing, the target is at full health or has fallen.
 4. **`item.add` adds nothing.** The id is unknown; check the `Id` in the item file.
 
-## Unique occurrences from a 3D world
+## One inventory for groups and 3D occurrences
 
-The optional scene3d integration keeps a unique occurrence as a separate row in
-the existing bag. Its passport exposes the persistent ID; equal blueprints never
-merge. Ordinary Add/Remove/TryGet/CheckCount address ordinary quantity rows only.
-Consumption, equipment and trading are unavailable for a unique row and never
-convert it into stock.
+Ordinary groups and unique world occurrences share the same bag. Count checks sum
+all accessible groups; crafting, trade and scenario removal use an atomic batch.
+A full container refuses before spending ingredients, money or a world identity.
+Equal blueprints do not make unique occurrences mergeable.
 
-Drop and its confirmation delegate placement to the 3D owner. Refusal keeps the
-occurrence in the bag; success returns its exact identity, recipe, payload and
-origin to a validated support. Authors use scene3d_editor’s Pickup item binding
-form; no hand-authored JSON is required.
+The inventory retains group IDs and the quantity supplied by each origin.
+Splitting creates a child ID and keeps the remainder ID; merging preserves all
+origin quantities. Recipe/deal receipts link new product origins to consumed
+inputs. Individual properties must match before groups can merge.
 
-An unavailable item definition does not erase its saved descriptor. Counterpart
-data and receipts remain until their owners reconcile. When the main dispatcher
-rejects identity data, unique operations stay unavailable and Core retains the
-original payload. Saving copies it into a new slot without interpreting or
-mutating it, then adds current ordinary stock and recipes. An empty/null legacy
-live slot cannot erase opaque older history. Quantity lots and split/merge
-lineage are not added by this integration.
+A 3D occurrence keeps its world recipe and payload with scene3d. Consuming it
+commits the bag removal and world tombstone together; loading cannot recreate its
+authored source. Equipment transfers the selected identity into an equipment
+compartment and returns that same identity on unequip. Missing providers preserve
+inert data and refuse the affected operation.
+
+## Rectangular storage
+
+With **Items Editor** loaded, **Container size** sets columns and rows and arranges
+the current bag. Both zero selects the legacy unlimited presentation. A smaller
+container refuses if its contents cannot fit. The author can also set capacity
+from a scenario: `action inventory.grid width=10 height=6`.
+
+Drag a group to move it. Hold **R** during the drop to turn a rotatable item.
+Drop onto a compatible group to merge; **Split group in half** creates a separate
+group in free cells. Search/filter hides rows without freeing their occupied
+cells. Sorting does not rearrange a bounded bag.
+
+In **Items Editor**, configure item width/height, group width/height, the group
+limit and rotation. Zero group dimensions inherit the single-item dimensions;
+a group limit of one prevents grouping. Old item definitions default to 1x1
+and unlimited group quantity. Cell dimensions are authored gameplay data, not
+inferred from physical 3D bounds. Existing saved groups retain their saved rules.
+
+Placement, shape, provenance and retry history live in the normal items save
+slot. Legacy ID/count saves load into individual groups. A malformed modern
+storage blob is rejected before replacing live state. Unknown definitions retain
+their records and occupied cells until their provider returns.
+
+### Developer contract
+
+`InventoryStorage` validates detached candidates before publication. `TryAdd`,
+`TryExchange`, `TryMove`, `TrySplit`, `TryMerge` and `TryConfigure` retain durable
+operation receipts. Equal retries return the original result; changed requests
+refuse. `CreatedOrigins` links product quantities to a receipt's `Removed`
+inputs. There is a 16384-receipt budget with explicit refusal rather than eviction.
+
+`Inventory.CaptureStorage` and `RestoreStorage` bridge the normal save owner;
+`FindStack`/`StackId` preserve exact selection. `TrySplitStack` coordinates -1/-1
+request automatic placement. `CanExchange` previews all inputs and outputs;
+`TryExchange` commits them together. Legacy void `Add` logs refusal: conditional
+reward owners should use `TryAdd` or `TryExchange` and inspect the result.
+
+`IInventoryInstanceConsumptionOwner` prepares a domain participant whose silent
+apply/rollback only swap preallocated managed state. All participants are checked
+before the swap window; observers run after every owner commits. Scene3d retains
+world tombstones and paired receipts. `IInventoryStackAction` owns its selected
+transfer, preventing a second equal blueprint from being consumed by the panel.
+
+The GUI fixture is inert without `--itest=inventory_storage_gui`; its runner
+selector is `inventory_storage_gui`. Captures use `ViewportCapture`. This storage
+does not add merchant buyback, nested-bag gameplay or distant world aggregation.

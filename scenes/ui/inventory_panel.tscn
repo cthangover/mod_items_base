@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://mods/items_base/src/ui/InventoryPanelBehaviour.cs" id="1_script"]
+[ext_resource type="Script" path="res://mods/items_base/src/ui/InventoryGridSurface.cs" id="2_grid"]
 
 [node name="InventoryPanel" type="Control"]
 layout_mode = 3
@@ -106,6 +107,33 @@ theme_override_font_sizes/font_size = 13
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 
+[node name="StorageButton" type="Button" parent="Panel/Margin/Root/Toolbar"]
+layout_mode = 2
+focus_mode = 0
+
+[node name="StorageSettings" type="HBoxContainer" parent="Panel/Margin/Root"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="WidthLabel" type="Label" parent="Panel/Margin/Root/StorageSettings"]
+layout_mode = 2
+
+[node name="Width" type="SpinBox" parent="Panel/Margin/Root/StorageSettings"]
+layout_mode = 2
+max_value = 256.0
+
+[node name="HeightLabel" type="Label" parent="Panel/Margin/Root/StorageSettings"]
+layout_mode = 2
+
+[node name="Height" type="SpinBox" parent="Panel/Margin/Root/StorageSettings"]
+layout_mode = 2
+max_value = 256.0
+
+[node name="Apply" type="Button" parent="Panel/Margin/Root/StorageSettings"]
+layout_mode = 2
+focus_mode = 0
+
 [node name="Body" type="HBoxContainer" parent="Panel/Margin/Root"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -125,6 +153,7 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 0
+script = ExtResource("2_grid")
 
 [node name="GridFooter" type="HBoxContainer" parent="Panel/Margin/Root/Body/Left"]
 layout_mode = 2

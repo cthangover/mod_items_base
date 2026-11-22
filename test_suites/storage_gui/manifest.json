@@ -1,0 +1,10 @@
+{
+  "name": "Inventory storage GUI contracts",
+  "depends": [
+    "items_editor>=0.1.0",
+    "classic_rpg_pack>=0.1.0"
+  ],
+  "test_sources": [
+    "tests/*.cs"
+  ]
+}

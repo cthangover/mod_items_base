@@ -41,6 +41,32 @@
           "Name": "items/schema/field/count"
         }
       ]
+    },
+    {
+      "Id": "inventory.grid",
+      "Name": "inventory/storage/settings",
+      "Description": "inventory/storage/drag_hint",
+      "Category": "items",
+      "Params": [
+        {
+          "Key": "container",
+          "Type": "text",
+          "Default": "player",
+          "Name": "items/schema/field/name"
+        },
+        {
+          "Key": "width",
+          "Type": "int",
+          "Required": true,
+          "Name": "inventory/storage/columns"
+        },
+        {
+          "Key": "height",
+          "Type": "int",
+          "Required": true,
+          "Name": "inventory/storage/rows"
+        }
+      ]
     }
   ],
   "Kinds": [

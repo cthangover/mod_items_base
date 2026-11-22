@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[node name="InventoryDragPreview" type="Control"]
+custom_minimum_size = Vector2(96, 96)
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="."]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Name" type="Label" parent="."]
+layout_mode = 1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = 24.0
+mouse_filter = 2

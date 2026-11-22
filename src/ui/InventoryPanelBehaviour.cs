@@ -110,6 +110,7 @@ namespace Cthangover.Core.UI.Inventory
         private VBoxContainer _passport;
         private Label _dropQuantityLabel;
         private System.Action<string, int> _onInventoryChange;
+        private IInventory observedInventory;
 
         // Scene nodes (inventory_panel.tscn): static layout lives in the scene,
         // the behaviour resolves them once and owns only the dynamic layer.
@@ -123,7 +124,7 @@ namespace Cthangover.Core.UI.Inventory
         {
             base._Ready();
             _onInventoryChange = (_, _) => Refresh();
-            GameData.Instance.Runtime.Inventory.Change += _onInventoryChange;
+            BindInventory();
             MouseFilter = MouseFilterEnum.Stop;
         }
 
@@ -131,7 +132,8 @@ namespace Cthangover.Core.UI.Inventory
         public override void _ExitTree()
         {
             base._ExitTree();
-            GameData.Instance.Runtime.Inventory.Change -= _onInventoryChange;
+            if (observedInventory != null)
+                observedInventory.Change -= _onInventoryChange;
         }
 
         protected override void OnceConstruct()
@@ -154,6 +156,7 @@ namespace Cthangover.Core.UI.Inventory
 
             ApplyTheme();
             ApplyCaptions();
+            BindStorageForm();
 
             _searchEdit.TextChanged += OnSearchChanged;
             _sortOption.ItemSelected += OnSortSelected;
@@ -217,6 +220,7 @@ namespace Cthangover.Core.UI.Inventory
 
         protected override void ShowConstruct()
         {
+            BindInventory();
             _filter = BagFilter.All;
             _sort = SortMode.Type;
             _search = string.Empty;
@@ -234,6 +238,18 @@ namespace Cthangover.Core.UI.Inventory
             RebuildGrid();
             UpdateActiveActorState();
             SelectFirst();
+        }
+
+        private void BindInventory()
+        {
+            var current = GameData.Instance.Runtime.Inventory;
+            if (ReferenceEquals(current, observedInventory) || _onInventoryChange == null)
+                return;
+            if (observedInventory != null)
+                observedInventory.Change -= _onInventoryChange;
+            observedInventory = current;
+            if (observedInventory != null)
+                observedInventory.Change += _onInventoryChange;
         }
 
         protected override void HideDestruct()
@@ -255,9 +271,18 @@ namespace Cthangover.Core.UI.Inventory
 
             var previousId = _selectedContainer?.Item?.ID;
             var previousInstance = (_selectedContainer as InventoryInstanceContainer)?.InstanceId;
+            var previousStack = Cthangover.Core.Items.Inventory.StackId(_selectedContainer);
             ClearGrid();
             ClearSelection();
             RebuildGrid();
+            RebuildTabs();
+
+            if (previousStack != null && GameData.Instance.Runtime.Inventory is Cthangover.Core.Items.Inventory owner
+                && owner.FindStack(previousStack) is IItemContainer selected)
+            {
+                SelectItem(selected);
+                return;
+            }
 
             if (RestoreOccurrenceSelection(previousInstance))
             {
@@ -317,6 +342,14 @@ namespace Cthangover.Core.UI.Inventory
             var inventory = GameData.Instance.Runtime.Inventory;
             var containers = GetFilteredContainers();
             var cellSize = CalculateCellSize();
+            var storage = (inventory as Cthangover.Core.Items.Inventory)?.CaptureStorage();
+            var grid = storage?.Grids["player"];
+            var bounded = grid?.Width > 0;
+            _sortOption.Disabled = bounded;
+            if (bounded)
+                _hintLabel.Text = InventoryItemUi.Translate("inventory/storage/drag_hint");
+            var step = bounded ? Mathf.Clamp(_gridContent.GetParent<Control>().Size.X / grid.Width, 24f, 64f) : cellSize + CellGap;
+            (_gridContent as InventoryGridSurface)?.Configure(bounded ? grid.Width : 0, bounded ? grid.Height : 0, step);
 
             for (var i = 0; i < containers.Count; i++)
             {
@@ -325,11 +358,25 @@ namespace Cthangover.Core.UI.Inventory
                 cell.Construct(container);
                 cell.Clicked += OnCellClicked;
                 _gridContent.AddChild(cell);
-                PlaceCell(cell, i, cellSize);
+                if (bounded)
+                {
+                    var id = Cthangover.Core.Items.Inventory.StackId(container);
+                    var placement = InventoryStorage.Find(storage, id);
+                    cell.Position = new Vector2(placement.X * step, placement.Y * step);
+                    cell.Size = new Vector2(placement.OccupiedWidth * step - 2, placement.OccupiedHeight * step - 2);
+                }
+                else
+                {
+                    PlaceCell(cell, i, cellSize);
+                }
                 _itemCells.Add(cell);
             }
 
-            if (_itemCells.Count > 0)
+            if (bounded)
+            {
+                _gridContent.CustomMinimumSize = new Vector2(grid.Width * step, grid.Height * step);
+            }
+            else if (_itemCells.Count > 0)
             {
                 var last = _itemCells[_itemCells.Count - 1];
                 var height = last.Position.Y + last.Size.Y + CellGap;
@@ -688,7 +735,7 @@ namespace Cthangover.Core.UI.Inventory
             block.AddThemeConstantOverride("separation", 9);
 
             var occurrence = container as InventoryInstanceContainer;
-            var usable = occurrence == null && InventoryItemUi.IsUsable(item);
+            var usable = InventoryItemUi.IsUsable(item) && CanConsumeSelected(container);
             var verb = InventoryItemUi.Translate(InventoryItemUi.VerbKey(item));
 
             var useButton = new Button();
@@ -700,6 +747,7 @@ namespace Cthangover.Core.UI.Inventory
             StyleButton(useButton, true, false);
             useButton.Pressed += OnUseClicked;
             block.AddChild(useButton);
+            AddSplitAction(block, container);
 
             if (!usable)
             {
@@ -887,7 +935,7 @@ namespace Cthangover.Core.UI.Inventory
 
         private void OnUseClicked()
         {
-            if (_selectedContainer is InventoryInstanceContainer)
+            if (!CanConsumeSelected(_selectedContainer))
             {
                 RefuseOccurrenceUse();
                 return;
@@ -909,7 +957,11 @@ namespace Cthangover.Core.UI.Inventory
             if (!HasActionPoint())
                 return;
 
-            if (!item.ItemAction.UseAction(item))
+            var used = item.ItemAction is IInventoryStackAction stackAction
+                ? stackAction.UseStack(GameData.Instance.Runtime.Inventory as Cthangover.Core.Items.Inventory,
+                    Cthangover.Core.Items.Inventory.StackId(container), null)
+                : item.ItemAction.UseAction(item);
+            if (!used)
             {
                 SetMessage(MessageKind.Error, InventoryItemUi.Translate("ui/inventory/use_failed"));
                 BuildPassport();
@@ -923,7 +975,7 @@ namespace Cthangover.Core.UI.Inventory
             SetMessage(MessageKind.Ok, string.Format(
                 InventoryItemUi.Translate(messageKey),
                 InventoryItemUi.Translate(item.Name)));
-            GameData.Instance.Runtime.Inventory.Remove(item, 1);
+            ConsumeSelection(container);
             PlaySound("items/use");
         }
 
@@ -1003,28 +1055,34 @@ namespace Cthangover.Core.UI.Inventory
                 InventoryItemUi.Translate("ui/inventory/dropped"),
                 InventoryItemUi.Translate(item.Name),
                 quantity));
-            GameData.Instance.Runtime.Inventory.Remove(item, quantity);
+            if (GameData.Instance.Runtime.Inventory is Cthangover.Core.Items.Inventory owner)
+                owner.TryExchange(new Dictionary<string, int> { [item.ID] = quantity }, new Dictionary<string, int>(),
+                    out _, Cthangover.Core.Items.Inventory.StackId(container));
+            else
+                GameData.Instance.Runtime.Inventory.Remove(item, quantity);
             PlaySound("ui/close_click");
         }
 
         private void OnTargetSelected(CharacterInfoData info)
         {
-            if (_selectedContainer is InventoryInstanceContainer)
+            if (!CanConsumeSelected(_selectedContainer))
             {
                 RefuseOccurrenceUse();
                 return;
             }
 
-            var item = _selectedContainer?.Item;
+            var selected = _selectedContainer;
+            var item = selected?.Item;
             if (item?.ItemAction == null)
                 return;
 
             if (!HasActionPoint())
                 return;
 
-            var applied = item.ItemAction is ITargetedItemAction targeted
-                ? targeted.UseOn(item, info)
-                : item.ItemAction.UseAction(item);
+            var applied = item.ItemAction is IInventoryStackAction stackAction
+                ? stackAction.UseStack(GameData.Instance.Runtime.Inventory as Cthangover.Core.Items.Inventory,
+                    Cthangover.Core.Items.Inventory.StackId(selected), info)
+                : item.ItemAction is ITargetedItemAction targeted ? targeted.UseOn(item, info) : item.ItemAction.UseAction(item);
             if (!applied)
             {
                 SetMessage(MessageKind.Error, InventoryItemUi.Translate("ui/inventory/applied_failed"));
@@ -1040,7 +1098,7 @@ namespace Cthangover.Core.UI.Inventory
                 InventoryItemUi.Translate("ui/inventory/applied"),
                 InventoryItemUi.Translate(item.Name),
                 targetName));
-            GameData.Instance.Runtime.Inventory.Remove(item, 1);
+            ConsumeSelection(selected);
             PlaySound("items/target");
         }
 

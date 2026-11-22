@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[node name="InventoryStorageActions" type="VBoxContainer"]
+layout_mode = 2
+
+[node name="SplitStack" type="Button" parent="."]
+layout_mode = 2
+focus_mode = 0
