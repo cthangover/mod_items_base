@@ -46,6 +46,7 @@ namespace Cthangover.Core.Items
 
             var ids = new HashSet<string>(StringComparer.Ordinal);
             var occupiedEquipment = new HashSet<string>(StringComparer.Ordinal);
+            var externalReferences = new HashSet<string>(StringComparer.Ordinal);
             foreach (var stack in Stacks)
             {
                 stack.Validate();
@@ -58,6 +59,13 @@ namespace Cthangover.Core.Items
                 if (grid.EquipmentCharacter != null && (stack.Count != 1 || !occupiedEquipment.Add(grid.Id)))
                 {
                     throw new ArgumentException("An equipment compartment holds exactly one unit");
+                }
+
+                if ((grid.Custodian == null) != (stack.CustodyReference == null)
+                    || grid.Custodian != null && (stack.ExternalOwner != null
+                        || !externalReferences.Add(grid.Custodian + "\n" + stack.CustodyReference)))
+                {
+                    throw new ArgumentException("Inventory custody reference does not match its reserved compartment");
                 }
             }
 
@@ -75,6 +83,8 @@ namespace Cthangover.Core.Items
                 {
                     removed.Validate();
                 }
+
+                value.Custody?.Validate();
             }
         }
     }

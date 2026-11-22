@@ -184,3 +184,14 @@ Every transition repacks atomically and refuses capacity loss. The lower-level
 All layouts use the same `IInventory` contracts for crafting, trade, equipment
 and 3D ownership. A mod can replace the `inventory` UI registration or patch its
 scene while keeping the same groups, storage transactions and save owner.
+
+### External quantity custody
+
+Domain adapters use `TryPrepareCustodyTransfer` to move ordinary groups into a
+reserved compartment. `items_base` remains their save/quantity owner, while they
+are absent from the accessible bag and ordinary crafting/trade inputs. Partial
+drops create a child ID and preserve the remainder; returns check capacity and
+compatible merges with exact origin contributions. Receipts retain the external
+reference and transferred portions. Preparation does not mutate live state: the
+coordinator validates both participants, swaps both, then publishes. This is an
+adapter contract, not an extra unlimited player pocket.

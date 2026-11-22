@@ -18,5 +18,7 @@ namespace Cthangover.Core.Items
         public List<InventoryStackData> Removed { get; set; } = new();
         /// <summary>Genesis keys created by this operation; product origins link back to its consumed inputs.</summary>
         public List<string> CreatedOrigins { get; set; } = new();
+        /// <summary>Optional paired-domain movement proof; these quantities were transferred rather than consumed.</summary>
+        public InventoryCustodyTransfer Custody { get; set; }
     }
 }

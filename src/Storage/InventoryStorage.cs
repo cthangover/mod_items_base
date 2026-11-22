@@ -11,7 +11,7 @@ namespace Cthangover.Core.Items
     /// Detached storage arithmetic used by inventory, crafting, trading and equipment. Every operation builds
     /// and validates a candidate before publication, so capacity, overlap or quantity failure changes nothing.
     /// </summary>
-    public sealed class InventoryStorage
+    public sealed partial class InventoryStorage
     {
         private InventoryStorageState state;
         /// <summary>Copies and validates a save candidate; callers retain no mutable references to its ledger.</summary>
@@ -132,7 +132,8 @@ namespace Cthangover.Core.Items
             {
                 foreach (var output in outputs)
                 {
-                    if (output == null || output.Size == null || output.Count < 1 || output.ExternalOwner != null)
+                    if (output == null || output.Size == null || output.Count < 1 || output.ExternalOwner != null
+                        || output.CustodyReference != null)
                     {
                         reason = "inventory/storage/invalid";
                         receipt = null;
@@ -191,6 +192,12 @@ namespace Cthangover.Core.Items
                 return false;
             }
 
+            if (row.CustodyReference != null || grid.Custodian != null)
+            {
+                reason = "inventory/storage/custody";
+                return false;
+            }
+
             row.Container = container;
             row.X = x;
             row.Y = y;
@@ -226,6 +233,13 @@ namespace Cthangover.Core.Items
                 if (grid == null)
                 {
                     throw new ArgumentException("Missing inventory compartment");
+                }
+
+                if (grid.Custodian != null || grid.Id.StartsWith("custody/", StringComparison.Ordinal)
+                    || next.Grids.TryGetValue(grid.Id, out var existing) && existing.Custodian != null)
+                {
+                    reason = "inventory/storage/custody";
+                    return false;
                 }
 
                 next.Grids[grid.Id] = Copy(grid);
@@ -289,7 +303,8 @@ namespace Cthangover.Core.Items
             }
 
             var row = Find(next, id);
-            if (row == null || count < 1 || count >= row.Count || row.ExternalOwner != null)
+            if (row == null || count < 1 || count >= row.Count || row.ExternalOwner != null || row.CustodyReference != null
+                || container == null || !next.Grids.TryGetValue(container, out var targetGrid) || targetGrid.Custodian != null)
             {
                 reason = "inventory/storage/invalid";
                 return false;
@@ -381,7 +396,8 @@ namespace Cthangover.Core.Items
                 next.Stacks.Add(source);
             }
 
-            if (source == null || source.Container != "player" || compartment?.EquipmentCharacter == null)
+            if (source == null || source.Container != "player" || source.CustodyReference != null
+                || compartment?.EquipmentCharacter == null || compartment.Custodian != null)
             {
                 reason = "inventory/storage/invalid";
                 return false;
@@ -457,9 +473,15 @@ namespace Cthangover.Core.Items
             }
 
             var row = Find(next, id);
-            if (row == null)
+            if (row == null || !next.Grids.TryGetValue(container ?? "", out var destination))
             {
                 reason = "inventory/storage/missing";
+                return false;
+            }
+
+            if (row.CustodyReference != null || destination.Custodian != null)
+            {
+                reason = "inventory/storage/custody";
                 return false;
             }
 
@@ -678,7 +700,8 @@ namespace Cthangover.Core.Items
         {
             foreach (var row in new List<InventoryStackData>(next.Stacks))
             {
-                if (row.ItemId != item || (selected == null ? row.Container != "player" : row.Id != selected))
+                if (row.CustodyReference != null || row.ItemId != item
+                    || (selected == null ? row.Container != "player" : row.Id != selected))
                 {
                     continue;
                 }
@@ -736,7 +759,8 @@ namespace Cthangover.Core.Items
 
         private static bool Compatible(InventoryStackData left, InventoryStackData right)
         {
-            return left.ExternalOwner == null && right.ExternalOwner == null && left.ItemId == right.ItemId
+            return left.ExternalOwner == null && right.ExternalOwner == null && left.CustodyReference == null
+                && right.CustodyReference == null && left.ItemId == right.ItemId
                 && JsonSerializer.Serialize(left.Size) == JsonSerializer.Serialize(right.Size) && JsonNode.DeepEquals(left.Properties,
                 right.Properties);
         }

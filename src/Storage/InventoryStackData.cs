@@ -34,6 +34,8 @@ namespace Cthangover.Core.Items
         public JsonObject Properties { get; set; } = new();
         /// <summary>Optional domain whose prepared participant must admit permanent consumption.</summary>
         public string ExternalOwner { get; set; }
+        /// <summary>External realization identity while a quantity group is held in a custodian compartment.</summary>
+        public string CustodyReference { get; set; }
 
         /// <summary>Actual occupied width, including group-specific dimensions and the saved rotation.</summary>
         public int OccupiedWidth
@@ -75,6 +77,11 @@ namespace Cthangover.Core.Items
             InventoryInstanceData.CheckIdentity(Id);
             InventoryInstanceData.CheckIdentity(ItemId);
             InventoryInstanceData.CheckIdentity(Container);
+            if (CustodyReference != null)
+            {
+                InventoryInstanceData.CheckIdentity(CustodyReference);
+            }
+
             Size?.Validate();
             if (Size == null || Count < 1 || Count > Size.StackLimit || X < 0 || Y < 0 || Rotated && !Size.Rotatable
                 || Properties == null || Origins == null || Origins.Count == 0)

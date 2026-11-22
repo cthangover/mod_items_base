@@ -11,6 +11,8 @@ namespace Cthangover.Core.Items
         public string Id { get; set; } = "player";
         /// <summary>grid uses item footprints; slots uses one cell per group; list has no geometric capacity.</summary>
         public string Layout { get; set; } = "grid";
+        /// <summary>Optional external domain that exclusively transfers groups in this reserved compartment.</summary>
+        public string Custodian { get; set; }
         /// <summary>Columns in cells; zero selects unbounded legacy storage.</summary>
         public int Width { get; set; }
         /// <summary>Rows in cells; zero is valid only with zero width.</summary>
@@ -24,6 +26,21 @@ namespace Cthangover.Core.Items
         public void Validate()
         {
             InventoryInstanceData.CheckIdentity(Id);
+            if (Custodian == null && Id.StartsWith("custody/", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("A reserved compartment requires its custodian");
+            }
+
+            if (Custodian != null)
+            {
+                InventoryInstanceData.CheckIdentity(Custodian);
+                if (Id != "custody/" + Uri.EscapeDataString(Custodian) || Layout != "list" || Width != 0 || Height != 0
+                    || EquipmentCharacter != null)
+                {
+                    throw new ArgumentException("Invalid external inventory compartment");
+                }
+            }
+
             if (Layout != "grid" && Layout != "slots" && Layout != "list"
                 || Layout == "list" && (Width != 0 || Height != 0))
             {
