@@ -50,6 +50,7 @@ namespace Cthangover.Core.Items
                     Reference = reference,
                     Contract = contract,
                     SourceGroup = id,
+                    ItemId = source.ItemId,
                     From = source.Container,
                     To = pickup ? "player" : compartment,
                     Count = count

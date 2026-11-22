@@ -32,6 +32,7 @@ namespace Cthangover.Mods.Items.Tests
             ModAssert.Equal(original.Id, moved.Parent);
             ModAssert.Equal(World, moved.CustodyReference);
             ModAssert.Equal(3, drop.Custody.Count);
+            ModAssert.Equal(original.ItemId, drop.Custody.ItemId);
             ModAssert.Equal(original.Id, drop.Custody.SourceGroup);
             ModAssert.False(store.TryMerge("illegal-merge", moved.Id, original.Id, out _, out _));
             ModAssert.False(store.TryMoveAuto("illegal-return", moved.Id, "player", out _, out _));

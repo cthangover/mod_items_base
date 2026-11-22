@@ -15,6 +15,8 @@ namespace Cthangover.Core.Items
         public string Reference { get; set; }
         /// <summary>Group selected before this transfer; a partial drop creates a distinct result group.</summary>
         public string SourceGroup { get; set; }
+        /// <summary>Blueprint whose quantity crossed the boundary, retained after the live source group disappears.</summary>
+        public string ItemId { get; set; }
         /// <summary>Source compartment address.</summary>
         public string From { get; set; }
         /// <summary>Destination compartment address.</summary>
@@ -34,6 +36,7 @@ namespace Cthangover.Core.Items
             InventoryInstanceData.CheckIdentity(Owner);
             InventoryInstanceData.CheckIdentity(Reference);
             InventoryInstanceData.CheckIdentity(SourceGroup);
+            InventoryInstanceData.CheckIdentity(ItemId);
             InventoryInstanceData.CheckIdentity(From);
             InventoryInstanceData.CheckIdentity(To);
             var compartment = "custody/" + Uri.EscapeDataString(Owner);
