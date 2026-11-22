@@ -3,6 +3,7 @@ namespace Cthangover.Core.Items
     using System;
     using System.Collections.Generic;
     using System.Text.Json;
+    using Cthangover.Core.Settings;
     using Cthangover.Core.Utils;
 
     public partial class Inventory
@@ -14,6 +15,21 @@ namespace Cthangover.Core.Items
             rows = new Dictionary<string, InventoryInstanceContainer>(instanceRows, StringComparer.Ordinal);
             var groups = new Dictionary<string, List<InventoryInstanceData>>(StringComparer.Ordinal);
             reason = null;
+            var externalCount = 0;
+            foreach (var removed in receipt.Removed)
+            {
+                if (removed.ExternalOwner != null)
+                {
+                    externalCount++;
+                }
+            }
+
+            if (externalCount > 0 && (next.Revision == long.MaxValue || next.Receipts.Count + externalCount > 16384))
+            {
+                reason = "inventory/instances/budget";
+                return false;
+            }
+
             foreach (var removed in receipt.Removed)
             {
                 if (removed.ExternalOwner == null)
@@ -81,6 +97,8 @@ namespace Cthangover.Core.Items
             }
 
             var revision = mutationRevision;
+            var runtime = GameData.Instance?.Runtime;
+            var primary = ReferenceEquals(runtime?.Inventory, this);
             var beforeStorage = CaptureStorage();
             var observed = JsonSerializer.Serialize(beforeStorage);
             var participants = new List<IInventoryStorageParticipant>();
@@ -114,6 +132,13 @@ namespace Cthangover.Core.Items
                         reason = "inventory/instances/stale_revision";
                         return false;
                     }
+                }
+
+                if (primary && (!ReferenceEquals(GameData.Instance?.Runtime, runtime)
+                    || !ReferenceEquals(runtime.Inventory, this)))
+                {
+                    reason = "inventory/instances/stale_revision";
+                    return false;
                 }
 
                 if (preview)
