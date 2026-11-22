@@ -525,6 +525,7 @@ namespace Cthangover.Core.UI.Inventory
             }
 
             _selectedContainer = container;
+            groupDrop = null;
             _dropOpen = false;
             _dropQuantity = 1;
             _targetOpen = false;
@@ -771,8 +772,13 @@ namespace Cthangover.Core.UI.Inventory
             {
                 canDrop = CanDropOccurrence(occurrence, out dropReason);
             }
+            else if (canDrop)
+            {
+                canDrop = InventoryGroupDropActions.CanDrop(GameData.Instance.Runtime.Inventory, container, out dropReason);
+            }
 
             var dropButton = new Button();
+            dropButton.Name = "DropItem";
             dropButton.Text = InventoryItemUi.Translate(canDrop ? "ui/inventory/drop" : "ui/inventory/drop_cant");
             dropButton.Disabled = !canDrop;
             dropButton.TooltipText = dropReason == null ? "" : InventoryItemUi.Translate(dropReason);
@@ -809,7 +815,7 @@ namespace Cthangover.Core.UI.Inventory
             head.AddChild(_dropQuantityLabel);
             column.AddChild(head);
 
-            var slider = new HSlider();
+            var slider = new HSlider { Name = "DropQuantity" };
             slider.MinValue = 1;
             slider.MaxValue = Mathf.Max(1, container.Count);
             slider.Step = 1;
@@ -827,7 +833,7 @@ namespace Cthangover.Core.UI.Inventory
             row.AddChild(MakeSmallButton("+", OnDropPlus));
             row.AddChild(MakeSmallButton(InventoryItemUi.Translate("ui/inventory/drop_all"), OnDropMax));
 
-            var confirm = new Button();
+            var confirm = new Button { Name = "ConfirmDrop" };
             confirm.Text = InventoryItemUi.Translate("ui/inventory/drop_confirm");
             confirm.FocusMode = FocusModeEnum.None;
             confirm.SizeFlagsHorizontal = SizeFlags.ExpandFill;
@@ -1000,6 +1006,15 @@ namespace Cthangover.Core.UI.Inventory
             if (_selectedContainer?.Item == null)
                 return;
 
+            if (_selectedContainer is not InventoryInstanceContainer
+                && !InventoryGroupDropActions.TryPrepare(GameData.Instance.Runtime.Inventory, _selectedContainer,
+                    out groupDrop, out var groupReason))
+            {
+                SetMessage(MessageKind.Error, InventoryItemUi.Translate(groupReason));
+                BuildPassport();
+                return;
+            }
+
             _dropQuantity = 1;
             _dropOpen = !_dropOpen;
             _targetOpen = false;
@@ -1054,21 +1069,8 @@ namespace Cthangover.Core.UI.Inventory
             var item = container?.Item;
             if (item == null || !InventoryItemUi.CanDrop(item))
                 return;
-            if (!HasActionPoint())
-                return;
-
-            SpendActionPoint();
             var quantity = Mathf.Clamp(_dropQuantity, 1, container.Count);
-            SetMessage(MessageKind.Ok, string.Format(
-                InventoryItemUi.Translate("ui/inventory/dropped"),
-                InventoryItemUi.Translate(item.Name),
-                quantity));
-            if (GameData.Instance.Runtime.Inventory is Cthangover.Core.Items.Inventory owner)
-                owner.TryExchange(new Dictionary<string, int> { [item.ID] = quantity }, new Dictionary<string, int>(),
-                    out _, Cthangover.Core.Items.Inventory.StackId(container));
-            else
-                GameData.Instance.Runtime.Inventory.Remove(item, quantity);
-            PlaySound("ui/close_click");
+            DropOrdinary(container, quantity);
         }
 
         private void OnTargetSelected(CharacterInfoData info)
