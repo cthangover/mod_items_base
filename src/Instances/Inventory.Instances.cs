@@ -30,6 +30,14 @@ namespace Cthangover.Core.Items
         {
         }
 
+        internal Inventory(InventoryGridData initialGrid) : this()
+        {
+            var candidate = new InventoryStorageState();
+            candidate.Grids["player"] = InventoryStorage.Copy(initialGrid);
+            candidate.Validate();
+            storage = candidate;
+        }
+
         /// <summary>Creates an empty bag with a bounded unique-row capacity; zero refuses new occurrences only.</summary>
         public Inventory(int instanceCapacity)
         {

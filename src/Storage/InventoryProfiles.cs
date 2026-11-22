@@ -13,14 +13,21 @@ namespace Cthangover.Core.Items
         /// <summary>Runtime factory used only when a fresh game inventory is requested.</summary>
         public static Inventory Create()
         {
-            var inventory = new Inventory();
             var profile = ActiveGame.GetSetting("inventory.profile");
-            if (!string.IsNullOrWhiteSpace(profile) && !TryApply(inventory, "initial-profile", profile, out var reason))
+            if (string.IsNullOrWhiteSpace(profile))
             {
-                throw new InvalidOperationException("Inventory profile '" + profile + "' refused: " + reason);
+                return new Inventory();
             }
 
-            return inventory;
+            var definitions = Entities.Collect<InventoryProfileInfo>(required: false);
+            if (!definitions.TryGetValue(profile, out var definition))
+            {
+                throw new InvalidOperationException("Inventory profile '" + profile + "' refused: inventory/storage/profile_missing");
+            }
+
+            // Seed a detached owner before publication, including while a save dispatcher creates its fresh runtime.
+            // Public mutations remain forbidden throughout that dispatch; saved storage replaces this initial policy.
+            return new Inventory(definition.ToGrid());
         }
 
         /// <summary>Changes an existing bag atomically, retaining identities and rejecting any capacity loss.</summary>
