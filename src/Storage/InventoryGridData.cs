@@ -9,6 +9,8 @@ namespace Cthangover.Core.Items
     {
         /// <summary>Stable compartment address used by placements and save data.</summary>
         public string Id { get; set; } = "player";
+        /// <summary>grid uses item footprints; slots uses one cell per group; list has no geometric capacity.</summary>
+        public string Layout { get; set; } = "grid";
         /// <summary>Columns in cells; zero selects unbounded legacy storage.</summary>
         public int Width { get; set; }
         /// <summary>Rows in cells; zero is valid only with zero width.</summary>
@@ -22,6 +24,12 @@ namespace Cthangover.Core.Items
         public void Validate()
         {
             InventoryInstanceData.CheckIdentity(Id);
+            if (Layout != "grid" && Layout != "slots" && Layout != "list"
+                || Layout == "list" && (Width != 0 || Height != 0))
+            {
+                throw new ArgumentException("Invalid inventory layout");
+            }
+
             if (Width < 0 || Height < 0 || Width > 256 || Height > 256 || (Width == 0) != (Height == 0))
             {
                 throw new ArgumentException("Invalid inventory container dimensions");
@@ -34,9 +42,26 @@ namespace Cthangover.Core.Items
 
             if (EquipmentCharacter != null)
             {
+                if (Layout != "grid")
+                {
+                    throw new ArgumentException("Equipment compartments cannot change their layout");
+                }
+
                 InventoryInstanceData.CheckIdentity(EquipmentCharacter);
                 InventoryInstanceData.CheckIdentity(EquipmentSlot);
             }
+        }
+
+        /// <summary>Projects the preserved item footprint into this compartment's capacity rules.</summary>
+        public int ItemWidth(InventoryStackData item)
+        {
+            return Layout == "grid" ? item.OccupiedWidth : 1;
+        }
+
+        /// <summary>Slots and lists never charge a group for its physical height.</summary>
+        public int ItemHeight(InventoryStackData item)
+        {
+            return Layout == "grid" ? item.OccupiedHeight : 1;
         }
     }
 }

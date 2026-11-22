@@ -1,0 +1,16 @@
+{
+  "Kind": "inventory_profile",
+  "Items": [
+    {
+      "Id": "inventory/test/slots",
+      "Extends": "inventory/grid",
+      "Layout": "slots",
+      "Width": 3,
+      "Height": 1
+    },
+    {
+      "Id": "inventory/test/list",
+      "Extends": "inventory/grid"
+    }
+  ]
+}

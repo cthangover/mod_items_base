@@ -487,16 +487,16 @@ namespace Cthangover.Core.Items
                 return true;
             }
 
-            if ((long)row.X + row.OccupiedWidth > grid.Width || (long)row.Y + row.OccupiedHeight > grid.Height)
+            if ((long)row.X + grid.ItemWidth(row) > grid.Width || (long)row.Y + grid.ItemHeight(row) > grid.Height)
             {
                 return false;
             }
 
             foreach (var other in data.Stacks)
             {
-                if (other.Id != ignore && other.Container == row.Container && row.X < (long)other.X + other.OccupiedWidth
-                    && other.X < (long)row.X + row.OccupiedWidth && row.Y < (long)other.Y + other.OccupiedHeight
-                    && other.Y < (long)row.Y + row.OccupiedHeight)
+                if (other.Id != ignore && other.Container == row.Container && row.X < (long)other.X + grid.ItemWidth(other)
+                    && other.X < (long)row.X + grid.ItemWidth(row) && row.Y < (long)other.Y + grid.ItemHeight(other)
+                    && other.Y < (long)row.Y + grid.ItemHeight(row))
                 {
                     return false;
                 }
@@ -651,9 +651,12 @@ namespace Cthangover.Core.Items
                 return true;
             }
 
-            for (var rotation = 0; rotation < (row.Size.Rotatable ? 2 : 1); rotation++)
+            for (var rotation = 0; rotation < (grid.Layout == "grid" && row.Size.Rotatable ? 2 : 1); rotation++)
             {
-                row.Rotated = rotation == 1;
+                if (grid.Layout == "grid")
+                {
+                    row.Rotated = rotation == 1;
+                }
                 for (var y = 0; y < grid.Height; y++)
                 {
                     for (var x = 0; x < grid.Width; x++)

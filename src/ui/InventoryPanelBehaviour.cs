@@ -344,10 +344,12 @@ namespace Cthangover.Core.UI.Inventory
             var cellSize = CalculateCellSize();
             var storage = (inventory as Cthangover.Core.Items.Inventory)?.CaptureStorage();
             var grid = storage?.Grids["player"];
+            var list = grid?.Layout == "list";
             var bounded = grid?.Width > 0;
             _sortOption.Disabled = bounded;
-            if (bounded)
-                _hintLabel.Text = InventoryItemUi.Translate("inventory/storage/drag_hint");
+            _hintLabel.Text = InventoryItemUi.Translate(bounded
+                ? grid.Layout == "slots" ? "inventory/storage/slots_drag_hint" : "inventory/storage/drag_hint"
+                : "ui/inventory/hint_select");
             var step = bounded ? Mathf.Clamp(_gridContent.GetParent<Control>().Size.X / grid.Width, 24f, 64f) : cellSize + CellGap;
             (_gridContent as InventoryGridSurface)?.Configure(bounded ? grid.Width : 0, bounded ? grid.Height : 0, step);
 
@@ -363,7 +365,13 @@ namespace Cthangover.Core.UI.Inventory
                     var id = Cthangover.Core.Items.Inventory.StackId(container);
                     var placement = InventoryStorage.Find(storage, id);
                     cell.Position = new Vector2(placement.X * step, placement.Y * step);
-                    cell.Size = new Vector2(placement.OccupiedWidth * step - 2, placement.OccupiedHeight * step - 2);
+                    cell.Size = new Vector2(grid.ItemWidth(placement) * step - 2, grid.ItemHeight(placement) * step - 2);
+                }
+                else if (list)
+                {
+                    cell.Position = new Vector2(0, i * 62);
+                    cell.Size = new Vector2(Mathf.Max(260, _gridContent.GetParent<Control>().Size.X), 56);
+                    cell.PresentAsList();
                 }
                 else
                 {

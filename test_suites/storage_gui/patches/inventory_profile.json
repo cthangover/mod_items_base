@@ -1,0 +1,14 @@
+{
+  "Items": [
+    {
+      "Id": "inventory/test/slots",
+      "Height": 2
+    },
+    {
+      "Id": "inventory/test/list",
+      "Layout": "list",
+      "Width": 0,
+      "Height": 0
+    }
+  ]
+}

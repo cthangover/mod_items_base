@@ -49,6 +49,11 @@ namespace Cthangover.Core.UI.Inventory
             button.Visible = ModManager.Instance.Mods.ContainsKey("items_editor");
             button.Text = InventoryItemUi.Translate("inventory/storage/settings");
             button.Pressed += ToggleStorageForm;
+            var layout = GetNode<OptionButton>("Panel/Margin/Root/StorageSettings/Layout");
+            layout.AddItem(InventoryItemUi.Translate("inventory/storage/grid"));
+            layout.AddItem(InventoryItemUi.Translate("inventory/storage/slots"));
+            layout.AddItem(InventoryItemUi.Translate("inventory/storage/list"));
+            layout.ItemSelected += OnStorageLayoutChanged;
             GetNode<Label>("Panel/Margin/Root/StorageSettings/WidthLabel").Text = InventoryItemUi.Translate("inventory/storage/columns");
             GetNode<Label>("Panel/Margin/Root/StorageSettings/HeightLabel").Text = InventoryItemUi.Translate("inventory/storage/rows");
             var apply = GetNode<Button>("Panel/Margin/Root/StorageSettings/Apply");
@@ -63,6 +68,9 @@ namespace Cthangover.Core.UI.Inventory
             if (form.Visible && GameData.Instance.Runtime.Inventory is StorageInventory inventory)
             {
                 var grid = inventory.CaptureStorage().Grids["player"];
+                var index = grid.Layout == "grid" ? 0 : grid.Layout == "slots" ? 1 : 2;
+                GetNode<OptionButton>("Panel/Margin/Root/StorageSettings/Layout").Selected = index;
+                OnStorageLayoutChanged(index);
                 GetNode<SpinBox>("Panel/Margin/Root/StorageSettings/Width").Value = grid.Width;
                 GetNode<SpinBox>("Panel/Margin/Root/StorageSettings/Height").Value = grid.Height;
             }
@@ -77,16 +85,25 @@ namespace Cthangover.Core.UI.Inventory
 
             var width = (int)GetNode<SpinBox>("Panel/Margin/Root/StorageSettings/Width").Value;
             var height = (int)GetNode<SpinBox>("Panel/Margin/Root/StorageSettings/Height").Value;
+            var index = GetNode<OptionButton>("Panel/Margin/Root/StorageSettings/Layout").Selected;
+            var layout = index == 0 ? "grid" : index == 1 ? "slots" : "list";
             var success = inventory.TryConfigureGrid("layout/" + Guid.NewGuid().ToString("N"), new InventoryGridData
             {
-                Width = width,
-                Height = height
+                Layout = layout,
+                Width = layout == "list" ? 0 : width,
+                Height = layout == "list" ? 0 : height
             }, out var reason, true);
             _hintLabel.Text = InventoryItemUi.Translate(success ? "inventory/storage/drag_hint" : reason);
             if (success)
             {
                 GetNode<Control>("Panel/Margin/Root/StorageSettings").Visible = false;
             }
+        }
+
+        private void OnStorageLayoutChanged(long index)
+        {
+            GetNode<SpinBox>("Panel/Margin/Root/StorageSettings/Width").Editable = index != 2;
+            GetNode<SpinBox>("Panel/Margin/Root/StorageSettings/Height").Editable = index != 2;
         }
 
         private void AddSplitAction(VBoxContainer block, IItemContainer container)

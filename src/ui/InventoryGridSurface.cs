@@ -87,10 +87,11 @@ namespace Cthangover.Core.UI.Inventory
 
         private static string Target(InventoryStorageState state, string source, int x, int y)
         {
+            var grid = state.Grids["player"];
             foreach (var row in state.Stacks)
             {
-                if (row.Id != source && row.Container == "player" && x >= row.X && x < row.X + row.OccupiedWidth && y >= row.Y
-                    && y < row.Y + row.OccupiedHeight)
+                if (row.Id != source && row.Container == "player" && x >= row.X && x < row.X + grid.ItemWidth(row) && y >= row.Y
+                    && y < row.Y + grid.ItemHeight(row))
                 {
                     return row.Id;
                 }
@@ -124,7 +125,8 @@ namespace Cthangover.Core.UI.Inventory
                 return false;
             }
 
-            rotated = Input.IsPhysicalKeyPressed(Key.R) ? !row.Rotated : row.Rotated;
+            var grid = inventory.CaptureStorage().Grids["player"];
+            rotated = grid.Layout == "grid" && Input.IsPhysicalKeyPressed(Key.R) ? !row.Rotated : row.Rotated;
             return true;
         }
     }

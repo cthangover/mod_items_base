@@ -136,3 +136,51 @@ transfer, preventing a second equal blueprint from being consumed by the panel.
 The GUI fixture is inert without `--itest=inventory_storage_gui`; its runner
 selector is `inventory_storage_gui`. Captures use `ViewportCapture`. This storage
 does not add merchant buyback, nested-bag gameplay or distant world aggregation.
+
+## Per-game inventory profiles
+
+A game's `collection.json` selects the policy through ordinary collection settings:
+
+```json
+"settings": { "inventory.profile": "inventory/grid" }
+```
+
+The collection editor exposes the same choice. Built-ins are `inventory/grid`
+(a sized 10×6 grid), `inventory/slots` (unbounded equal cells, one per group) and
+`inventory/list` (named rows with quantities, no geometric capacity). A custom
+slots profile can be finite, such as 8×4. Group limits, properties, origins and
+unique identities are shared by all modes. Slots/list ignore physical footprints
+without rewriting them; switching back to grid restores the original size rules.
+No selection preserves the legacy unbounded bag. Players cannot gain capacity by
+changing presentation; the panel's policy form is available only with `items_editor`.
+
+A dependent mod defines a normal entity and the game selects its ID:
+
+```json
+{
+  "Kind": "inventory_profile",
+  "Items": [
+    { "Id": "my_game/bag", "Extends": "inventory/slots", "Width": 8, "Height": 4 }
+  ]
+}
+```
+
+Standard ID overrides, `Extends` and `patches/inventory_profile.json` apply.
+Mods may advertise another `inventory.profile` option in `collection_settings.json`;
+custom IDs are also accepted. Definitions come from the current mod set, with no
+cached selection crossing game boundaries. An explicitly selected missing or
+invalid profile fails fresh inventory creation instead of silently granting an
+unbounded bag.
+
+Fresh games read the collection setting; saved compartments retain their saved
+layout, capacity and placements. Changing a collection setting never silently
+repacks a save. To change an existing bag explicitly, use the scenario command
+`inventory.profile id=my_game/bag`, or
+`InventoryProfiles.TryApply(inventory, operationId, profileId, out reason)`.
+Every transition repacks atomically and refuses capacity loss. The lower-level
+`inventory.grid width=8 height=4 layout=slots` accepts a layout (`grid` by default);
+`list` requires both dimensions to be zero.
+
+All layouts use the same `IInventory` contracts for crafting, trade, equipment
+and 3D ownership. A mod can replace the `inventory` UI registration or patch its
+scene while keeping the same groups, storage transactions and save owner.

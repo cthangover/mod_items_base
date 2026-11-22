@@ -116,6 +116,9 @@ visible = false
 layout_mode = 2
 theme_override_constants/separation = 10
 
+[node name="Layout" type="OptionButton" parent="Panel/Margin/Root/StorageSettings"]
+layout_mode = 2
+
 [node name="WidthLabel" type="Label" parent="Panel/Margin/Root/StorageSettings"]
 layout_mode = 2
 

@@ -65,6 +65,33 @@
           "Type": "int",
           "Required": true,
           "Name": "inventory/storage/rows"
+        },
+        {
+          "Key": "layout",
+          "Type": "text",
+          "Default": "grid",
+          "Name": "inventory/storage/layout"
+        }
+      ]
+    },
+    {
+      "Id": "inventory.profile",
+      "Name": "inventory/storage/profile",
+      "Description": "inventory/storage/profile_hint",
+      "Category": "items",
+      "Params": [
+        {
+          "Key": "id",
+          "Type": "ref",
+          "Kind": "inventory_profile",
+          "Required": true,
+          "Name": "inventory/storage/profile"
+        },
+        {
+          "Key": "container",
+          "Type": "text",
+          "Default": "player",
+          "Name": "items/schema/field/name"
         }
       ]
     }

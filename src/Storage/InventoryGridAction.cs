@@ -31,6 +31,7 @@ namespace Cthangover.Mods.Items
             if (!inventory.TryConfigureGrid("grid/" + System.Guid.NewGuid().ToString("N"), new InventoryGridData
             {
                 Id = container,
+                Layout = context.GetParam("layout") ?? "grid",
                 Width = width,
                 Height = height
             }, out var reason, true))

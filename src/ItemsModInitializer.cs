@@ -40,7 +40,7 @@ namespace Cthangover.Mods.Items
         /// <summary>Installs the RuntimeData factory hooks and binds the item-action bridge (both idempotent).</summary>
         public void OnModResourcesReady()
         {
-            RuntimeData.InventoryFactory ??= () => new Inventory();
+            RuntimeData.InventoryFactory ??= InventoryProfiles.Create;
             RuntimeData.RecipeDataFactory ??= () => new RecipeData();
 
             ItemActionBridge.Bind(action => ItemActionFactory.Instance.Register(action));

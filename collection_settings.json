@@ -1,0 +1,30 @@
+{
+  "settings": [
+    {
+      "key": "inventory.profile",
+      "name": "inventory/storage/profile",
+      "description": "inventory/storage/profile_hint",
+      "group": "inventory/storage/profile_group",
+      "type": "choice",
+      "allow_custom": true,
+      "automatic": "inventory/storage/profile_auto"
+    }
+  ],
+  "options": [
+    {
+      "key": "inventory.profile",
+      "value": "inventory/grid",
+      "name": "inventory/storage/grid"
+    },
+    {
+      "key": "inventory.profile",
+      "value": "inventory/slots",
+      "name": "inventory/storage/slots"
+    },
+    {
+      "key": "inventory.profile",
+      "value": "inventory/list",
+      "name": "inventory/storage/list"
+    }
+  ]
+}
