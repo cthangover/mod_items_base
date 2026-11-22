@@ -5,6 +5,7 @@ namespace Cthangover.Mods.Items
     using Cthangover.Core.Factories.Impls;
     using Cthangover.Core.Items;
     using Cthangover.Core.Mods;
+    using Cthangover.Core.Mods.Resolvers;
     using Cthangover.Core.Settings;
     using Cthangover.Core.Utils;
 
@@ -159,9 +160,10 @@ namespace Cthangover.Mods.Items
                 if (hasStock)
                 {
                     containers = new List<IItemContainer>();
+                    var definitions = Entities.Collect<ItemInfo>(required: false);
                     foreach (var saved in stockBlob.ReadJson<List<CItem>>() ?? new List<CItem>())
                     {
-                        var item = ItemFactory.Instance.Get(saved.ID);
+                        var item = saved.ID != null && definitions.ContainsKey(saved.ID) ? ItemFactory.Instance.Get(saved.ID) : null;
                         if (item != null)
                         {
                             if (saved.Count < 1)
@@ -171,6 +173,11 @@ namespace Cthangover.Mods.Items
 
                             var limit = InventoryItemSize.From(item).StackLimit;
                             var remaining = saved.Count;
+                            if ((remaining + (long)limit - 1) / limit > 16384 - containers.Count)
+                            {
+                                throw new ArgumentException("Saved inventory exceeds its group budget");
+                            }
+
                             while (remaining > 0)
                             {
                                 var count = Math.Min(remaining, limit);

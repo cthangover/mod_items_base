@@ -368,7 +368,16 @@ namespace Cthangover.Core.Items
                 source.Id = "stack/" + Guid.NewGuid().ToString("N");
                 source.Origins.Clear();
                 source.Origins["stock/" + Guid.NewGuid().ToString("N")] = 1;
-                source.Validate();
+                try
+                {
+                    source.Validate();
+                }
+                catch (ArgumentException)
+                {
+                    reason = "inventory/storage/invalid";
+                    return false;
+                }
+
                 next.Stacks.Add(source);
             }
 
@@ -378,7 +387,16 @@ namespace Cthangover.Core.Items
                 return false;
             }
 
-            compartment.Validate();
+            try
+            {
+                compartment.Validate();
+            }
+            catch (ArgumentException)
+            {
+                reason = "inventory/storage/invalid";
+                return false;
+            }
+
             next.Grids[compartment.Id] = Copy(compartment);
             var returning = new List<InventoryStackData>();
             foreach (var row in next.Stacks)
@@ -592,6 +610,12 @@ namespace Cthangover.Core.Items
                     reason = null;
                     return true;
                 }
+            }
+
+            if ((count + (long)size.StackLimit - 1) / size.StackLimit > 16384 - next.Stacks.Count)
+            {
+                reason = "inventory/storage/budget";
+                return false;
             }
 
             while (count > 0)

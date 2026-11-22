@@ -99,5 +99,85 @@ namespace Cthangover.Mods.Items.Tests
 
             throw new System.InvalidOperationException("The fixture requires one loaded item definition");
         }
+
+        /// <summary>Legacy quantities are split to current group limits; the full old quantity survives its first modern save.</summary>
+        [ModTest("inventory/storage_binding_legacy_count_migrates_to_group_limits")]
+        public static void LegacyGroups(ModTestContext context)
+        {
+            var id = FirstItem();
+            var definition = Entities.Collect<ItemInfo>()[id];
+            var properties = definition.ExtraProperties;
+            var runtime = GameData.Instance.Runtime;
+            var previous = runtime.Inventory;
+            try
+            {
+                definition.ExtraProperties = properties == null ? new Dictionary<string, object>()
+                    : new Dictionary<string, object>(properties);
+                definition.ExtraProperties["Inventory"] = JsonSerializer.Deserialize<JsonElement>("{\"StackLimit\":2}");
+                runtime.Inventory = new Inventory();
+                var slot = new ModSlot();
+                slot.Data["Inventory"] = new DataBlob(1, new List<CItem>
+                {
+                    new()
+                    {
+                        ID = id,
+                        Count = 5
+                    }
+                });
+                var owner = new ItemsSaveable();
+                ModAssert.True(owner.OnLoad(slot, out var error), error);
+                ModAssert.Equal(5, runtime.Inventory.CheckCount(id));
+                ModAssert.Equal(3, runtime.Inventory.Items.Count);
+                var modern = new ModSlot();
+                owner.OnSave(modern);
+                var saved = modern.Data["Storage"].ReadJson<InventoryStorageState>();
+                saved.Validate();
+                ModAssert.Equal(2, saved.Stacks[0].Count);
+                ModAssert.Equal(2, saved.Stacks[1].Count);
+                ModAssert.Equal(1, saved.Stacks[2].Count);
+            }
+            finally
+            {
+                definition.ExtraProperties = properties;
+                runtime.Inventory = previous;
+            }
+        }
+
+        /// <summary>A legacy unresolved item receives stable storage metadata and survives a second, modern JSON load.</summary>
+        [ModTest("inventory/storage_binding_unresolved_legacy_stock_survives_modern_reload")]
+        public static void Unresolved(ModTestContext context)
+        {
+            var runtime = GameData.Instance.Runtime;
+            var previous = runtime.Inventory;
+            try
+            {
+                runtime.Inventory = new Inventory();
+                var slot = new ModSlot();
+                slot.Data["Inventory"] = new DataBlob(1, new List<CItem>
+                {
+                    new()
+                    {
+                        ID = "unavailable_storage_test/item",
+                        Count = 3
+                    }
+                });
+                var owner = new ItemsSaveable();
+                ModAssert.True(owner.OnLoad(slot, out var error), error);
+                var modern = new ModSlot();
+                owner.OnSave(modern);
+                var json = JsonSerializer.Serialize(modern);
+                modern = JsonSerializer.Deserialize<ModSlot>(json);
+                runtime.Inventory = new Inventory();
+                ModAssert.True(owner.OnLoad(modern, out error), error);
+                var state = ((Inventory)runtime.Inventory).CaptureStorage();
+                ModAssert.Equal(1, state.Stacks.Count);
+                ModAssert.Equal(3, state.Stacks[0].Count);
+                ModAssert.Equal(0, runtime.Inventory.Items.Count);
+            }
+            finally
+            {
+                runtime.Inventory = previous;
+            }
+        }
     }
 }

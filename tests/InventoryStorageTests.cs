@@ -243,5 +243,20 @@ namespace Cthangover.Mods.Items.Tests
 
             return result;
         }
+
+        /// <summary>A huge ungroupable grant refuses before allocating an unbounded number of rows.</summary>
+        [ModTest("inventory/storage_group_budget_refuses_large_grant_before_allocation")]
+        public static void Budget(ModTestContext context)
+        {
+            var store = new InventoryStorage(new InventoryStorageState());
+            var before = JsonSerializer.Serialize(store.Capture());
+            var size = new InventoryItemSize
+            {
+                StackLimit = 1
+            };
+            ModAssert.False(store.TryAdd("huge", "test/individual", int.MaxValue, size, null, out _, out var reason));
+            ModAssert.Equal("inventory/storage/budget", reason);
+            ModAssert.Equal(before, JsonSerializer.Serialize(store.Capture()));
+        }
     }
 }
