@@ -7,6 +7,8 @@ using Cthangover.Core.Utils;
 
 namespace Cthangover.Core.Factories.Impls
 {
+    using Cthangover.Core.Mods.Memory;
+
     /// <summary>
     /// Factory for crafting recipes. Uses <c>BoundedCache</c> because the
     /// crafting UI may repeatedly query recipes during scrolling and the
@@ -34,6 +36,7 @@ namespace Cthangover.Core.Factories.Impls
         {
             var size = ModConfig.Instance.Cache.GetCacheSize("recipes", 128);
             _cache = new BoundedCache<string, IRecipe>(size, this);
+            ModMemoryService.Shared.TryFor(typeof(RecipeFactory).Assembly)?.TrackInstance("factory.recipes", _cache);
         }
 
         IRecipe ICacheLoader<string, IRecipe>.Load(string id)
