@@ -16,6 +16,9 @@ namespace Cthangover.Core.Items
 
         /// <summary>Projects a saved point into viewport pixels and checks whether it is within reach.</summary>
         bool TryProject(InventoryGroundPosition point, out Vector2 screen, out bool inReach);
+
+        /// <summary>Plays presentation for a newly committed drop. Restored piles never replay it.</summary>
+        void PresentDrop(InventoryGroundPosition point, IItem item) { }
     }
 
     /// <summary>Resolves coordinates for worlds with a player avatar, with a scene-local fallback for visual novels.</summary>
@@ -44,6 +47,12 @@ namespace Cthangover.Core.Items
             screen = default;
             inReach = false;
             return worlds.TryGetValue(point.Domain, out var world) && world.TryProject(point, out screen, out inReach);
+        }
+
+        internal static void PresentDrop(InventoryGroundPosition point, IItem item)
+        {
+            if (worlds.TryGetValue(point.Domain, out var world))
+                world.PresentDrop(point, item);
         }
     }
 }

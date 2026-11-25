@@ -6,6 +6,7 @@ namespace Cthangover.Core.Items
     using Cthangover.Core.Scenes;
     using Cthangover.Core.Settings;
     using Cthangover.Core.UI.Theming;
+    using Cthangover.Core.Utils;
     using Cthangover.Mods.Interface.Messages;
     using Cthangover.Mods.Interface.Shell;
     using Godot;
@@ -144,8 +145,11 @@ namespace Cthangover.Core.Items
                 || ShellSession.Current?.SimulationPaused == true
                 || !TryLocate(pile.Position, out _, out var inReach) || !inReach) return;
             if (!owner.TryPickUpGroundReward(pile.Position, pile.Id, out var reason))
+            {
+                GameLogger.Log("ITEMS", $"Ground pickup of '{pile.ItemId}' refused: {reason}", LogLevel.Debug);
                 MessagesHelper.AddMessage(Tr(reason == "inventory/storage/no_space"
                     ? "inventory/reward/no_space" : reason).ToString());
+            }
         }
     }
 }

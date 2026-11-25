@@ -40,8 +40,11 @@ namespace Cthangover.Core.Items
             }
 
             if (dropped > 0 && GameEnvironment.IsRuntime)
+            {
                 MessagesHelper.AddMessage(string.Format(TranslationServer.Translate("inventory/reward/ground").ToString(),
                     DisplayName(item), dropped));
+                InventoryGroundWorlds.PresentDrop(position, item);
+            }
         }
 
         internal static string DisplayName(IItem item) =>
