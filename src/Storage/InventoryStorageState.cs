@@ -19,6 +19,8 @@ namespace Cthangover.Core.Items
         };
         /// <summary>Ordered groups, including unresolved blueprints and equipment.</summary>
         public List<InventoryStackData> Stacks { get; set; } = new();
+        /// <summary>Rewards waiting in their own locations until picked up by the player.</summary>
+        public Dictionary<string, InventoryGroundReward> GroundRewards { get; set; } = new(StringComparer.Ordinal);
         /// <summary>Committed requests and consumed portions retained for retries and provenance.</summary>
         public Dictionary<string, InventoryStorageReceipt> Receipts { get; set; } = new(StringComparer.Ordinal);
 
@@ -30,7 +32,8 @@ namespace Cthangover.Core.Items
         public void Validate()
         {
             if (Version != 1 || Grids == null || !Grids.ContainsKey("player") || Grids.Count > 256 || Stacks == null
-                || Stacks.Count > 16384 || Receipts == null || Receipts.Count > 16384 || Extra == null)
+                || Stacks.Count > 16384 || Receipts == null || Receipts.Count > 16384 || Extra == null
+                || GroundRewards == null || GroundRewards.Count > 16384)
             {
                 throw new ArgumentException("Invalid inventory storage state");
             }
@@ -85,6 +88,12 @@ namespace Cthangover.Core.Items
                 }
 
                 value.Custody?.Validate();
+            }
+
+            foreach (var pair in GroundRewards)
+            {
+                if (pair.Value == null || pair.Key != pair.Value.Id) throw new ArgumentException("Invalid ground reward identity");
+                pair.Value.Validate();
             }
         }
     }

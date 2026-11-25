@@ -597,6 +597,12 @@ namespace Cthangover.Core.Items
         private static bool Add(InventoryStorageState next, string itemId, int count, InventoryItemSize size, JsonObject properties,
             string origin, out string reason)
         {
+            return AddToBag(next, itemId, ref count, size, properties, origin, false, out reason);
+        }
+
+        private static bool AddToBag(InventoryStorageState next, string itemId, ref int count, InventoryItemSize size,
+            JsonObject properties, string origin, bool allowPartial, out string reason)
+        {
             var prototype = new InventoryStackData
             {
                 ItemId = itemId,
@@ -634,7 +640,7 @@ namespace Cthangover.Core.Items
                 }
             }
 
-            if ((count + (long)size.StackLimit - 1) / size.StackLimit > 16384 - next.Stacks.Count)
+            if (!allowPartial && (count + (long)size.StackLimit - 1) / size.StackLimit > 16384 - next.Stacks.Count)
             {
                 reason = "inventory/storage/budget";
                 return false;
@@ -642,11 +648,25 @@ namespace Cthangover.Core.Items
 
             while (count > 0)
             {
+                if (next.Stacks.Count >= 16384)
+                {
+                    reason = allowPartial ? "inventory/storage/no_space" : "inventory/storage/budget";
+                    return false;
+                }
+
                 var row = Copy(prototype);
                 row.Id = "stack/" + Guid.NewGuid().ToString("N");
                 row.Count = Math.Min(count, size.StackLimit);
+                var placed = Place(next, row);
+                if (!placed && allowPartial && row.Count > 1
+                    && (size.GroupWidth != 0 || size.GroupHeight != 0))
+                {
+                    row.Count = 1;
+                    placed = Place(next, row);
+                }
+
                 row.Origins[origin] = row.Count;
-                if (!Place(next, row))
+                if (!placed)
                 {
                     reason = "inventory/storage/no_space";
                     return false;

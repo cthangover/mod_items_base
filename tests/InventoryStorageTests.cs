@@ -11,6 +11,54 @@ namespace Cthangover.Mods.Items.Tests
     /// </summary>
     public sealed class InventoryStorageTests
     {
+        [ModTest("inventory/rewards_ground_partial_reload_and_pickup")]
+        public static void GroundReward(ModTestContext context)
+        {
+            const string item = "test/ore";
+            var store = Grid(1, 1);
+            var size = new InventoryItemSize { StackLimit = 3 };
+            var point = new InventoryGroundPosition { Domain = "rpg", Location = "meadow", X = 3, Y = 5 };
+            ModAssert.True(store.TryAdd("stock", item, 2, size, null, out _, out _));
+            ModAssert.True(store.TryGrantReward("quest", item, 5, size, point, out var dropped, out _));
+            ModAssert.Equal(4, dropped);
+            ModAssert.Equal(3, store.Count(item));
+            var json = JsonSerializer.Serialize(store.Capture());
+            var saved = JsonSerializer.Deserialize<InventoryStorageState>(json);
+            store = new InventoryStorage(saved);
+            var pileId = saved.Receipts["quest"].Result;
+            ModAssert.Equal(1, saved.Stacks[0].Origins[pileId]);
+            ModAssert.Equal(5f, saved.GroundRewards[pileId].Position.Y);
+            ModAssert.True(store.TryGrantReward("quest", item, 5, size, point, out var replay, out _));
+            ModAssert.Equal(0, replay, "idempotent calls do not repeat the overflow message");
+            ModAssert.False(store.TryGrantReward("quest", item, 6, size, point, out _, out _));
+            ModAssert.False(store.TryTakeGroundReward("wrong_scene", pileId, size, point.Domain, "forest", out _));
+            ModAssert.False(store.TryTakeGroundReward("still_full", pileId, size, point.Domain, point.Location, out var reason));
+            ModAssert.Equal("inventory/storage/no_space", reason);
+            ModAssert.Equal(json, JsonSerializer.Serialize(store.Capture()));
+
+            ModAssert.True(store.TryExchange("use", new() { [item] = 2 }, new(), null, out _, out _));
+            ModAssert.True(store.TryTakeGroundReward("pick1", pileId, size, point.Domain, point.Location, out _));
+            ModAssert.Equal(3, store.Count(item));
+            ModAssert.Equal(2, store.Capture().GroundRewards[pileId].Count);
+            ModAssert.True(store.TryTakeGroundReward("pick1", pileId, size, point.Domain, point.Location, out _));
+            ModAssert.Equal(2, store.Capture().GroundRewards[pileId].Count);
+            ModAssert.True(store.TryExchange("use_again", new() { [item] = 2 }, new(), null, out _, out _));
+            ModAssert.True(store.TryTakeGroundReward("pick2", pileId, size, point.Domain, point.Location, out _));
+            ModAssert.Equal(3, store.Count(item));
+            ModAssert.Equal(0, store.Capture().GroundRewards.Count);
+        }
+
+        [ModTest("inventory/rewards_unbounded_slots_never_drop")]
+        public static void UnboundedReward(ModTestContext context)
+        {
+            var store = new InventoryStorage(new InventoryStorageState());
+            ModAssert.True(store.TryGrantReward("gift", "test/ore", 9, new InventoryItemSize { StackLimit = 2 },
+                null, out var dropped, out _));
+            ModAssert.Equal(0, dropped);
+            ModAssert.Equal(9, store.Count("test/ore"));
+            ModAssert.Equal(0, store.Capture().GroundRewards.Count);
+        }
+
         /// <summary>A full rotated rectangle refuses another item and every invalid move without losing its original placement.</summary>
         [ModTest("inventory/storage_rectangles_rotation_and_atomic_full_refusal")]
         public static void Rectangles(ModTestContext context)

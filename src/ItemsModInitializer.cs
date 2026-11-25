@@ -5,6 +5,7 @@ using Cthangover.Core.Scenes.Parsing;
 using Cthangover.Core.Items;
 using Cthangover.Core.Mods;
 using Cthangover.Core.Settings;
+using Cthangover.Core.Utils;
 
 namespace Cthangover.Mods.Items
 {
@@ -44,6 +45,9 @@ namespace Cthangover.Mods.Items
             RuntimeData.RecipeDataFactory ??= () => new RecipeData();
 
             ItemActionBridge.Bind(action => ItemActionFactory.Instance.Register(action));
+
+            if (GameEnvironment.IsRuntime)
+                ModRoot.AddDeferred(new InventoryGroundRewardsView { Name = "InventoryGroundRewards", Layer = 1 });
         }
     }
 }

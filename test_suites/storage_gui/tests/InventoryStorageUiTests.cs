@@ -3,12 +3,15 @@ namespace Cthangover.Mods.Items.Tests
     using System.IO;
     using System.Threading.Tasks;
     using Cthangover.Core.Factories.Impls;
+    using Cthangover.Core.Events;
     using Cthangover.Core.Items;
+    using Cthangover.Core.Localization;
     using Cthangover.Core.Mods.Resolvers;
     using Cthangover.Core.Mods.Testing;
     using Cthangover.Core.Settings;
     using Cthangover.Core.UI;
     using Cthangover.Core.UI.Inventory;
+    using Cthangover.Core.UI.Messages;
     using Cthangover.Mods.Interface.View;
     using Godot;
 
@@ -18,6 +21,58 @@ namespace Cthangover.Mods.Items.Tests
     /// </summary>
     public sealed class InventoryStorageUiTests
     {
+        [ModTest("inventory/rewards_native_notification_and_pickup", TimeoutSeconds = 60)]
+        public static async Task GroundReward(ModTestContext context)
+        {
+            var runtime = GameData.Instance.Runtime;
+            var previous = runtime.Inventory;
+            var previousLocale = TranslationServer.GetLocale();
+            var tree = (SceneTree)Engine.GetMainLoop();
+            string notification = null;
+            void Capture(NotificationRequestedEvent evt) => notification = evt.Text;
+            ModEventBus.Subscribe<NotificationRequestedEvent>(Capture);
+            try
+            {
+                LocaleLoader.LoadLocale("ru");
+                var inventory = new Inventory();
+                runtime.Inventory = inventory;
+                ModAssert.True(inventory.TryConfigureGrid("small", new InventoryGridData { Width = 1, Height = 1 }, out _));
+                using var ids = Entities.Collect<ItemInfo>().Keys.GetEnumerator();
+                ModAssert.True(ids.MoveNext());
+                var blocker = ItemFactory.Instance.Get(ids.Current);
+                blocker.Properties.SetStr("Inventory", "{\"Width\":1,\"Height\":1}");
+                ModAssert.True(inventory.TryAdd(blocker, 1, out _));
+                ModAssert.True(ids.MoveNext());
+                var reward = ItemFactory.Instance.Get(ids.Current);
+                var nativeSize = InventoryItemSize.From(reward);
+                ModAssert.True(nativeSize.Width == 1 && nativeSize.Height == 1, "test reward fits an empty cell");
+
+                InventoryRewards.Grant(inventory, reward, 1);
+                if (notification == null && NotificationBuffer.TryDequeue(out var queued)) notification = queued;
+                ModAssert.True(notification?.Contains("В сумке не хватило места") == true, notification);
+                ModAssert.Equal(0, inventory.CheckCount(reward.ID));
+                ModAssert.Equal(1, inventory.CaptureStorage().GroundRewards.Count);
+                await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
+                await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
+                var view = tree.Root.GetNode<InventoryGroundRewardsView>("InventoryGroundRewards");
+                Button marker = null;
+                foreach (var child in view.GetChildren())
+                    if (child is Button button && button.Visible) marker = button;
+                ModAssert.NotNull(marker, "ground loot is visible in the active scene");
+
+                ModAssert.True(inventory.TryExchange(new() { [blocker.ID] = 1 }, new(), out _));
+                marker.EmitSignal(Button.SignalName.Pressed);
+                ModAssert.Equal(1, inventory.CheckCount(reward.ID));
+                ModAssert.Equal(0, inventory.CaptureStorage().GroundRewards.Count);
+            }
+            finally
+            {
+                runtime.Inventory = previous;
+                TranslationServer.SetLocale(previousLocale);
+                ModEventBus.Unsubscribe<NotificationRequestedEvent>(Capture);
+            }
+        }
+
         /// <summary>
         /// The actual prefab sizes rectangles, moves the selected group, refuses stale drag data and splits through its button.
         /// </summary>

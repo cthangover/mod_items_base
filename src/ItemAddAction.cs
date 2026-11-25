@@ -1,10 +1,11 @@
 using Cthangover.Core.Actions;
+using Cthangover.Core.Items;
 
 namespace Cthangover.Mods.Items
 {
     /// <summary>
     /// <c>action item.add id=resource/branches [count=3]</c> — puts items into the
-    /// player's inventory from a scenario: a chest, a gift, a pickup on an RPG map.
+    /// player's inventory from a scenario, leaving any overflow on the ground.
     /// <c>count</c> defaults to 1; an unknown item id is reported by the inventory
     /// and adds nothing.
     /// </summary>
@@ -36,7 +37,7 @@ namespace Cthangover.Mods.Items
                 ctx.LogWarning("INVENTORY", "item.add: no inventory in this game");
                 return;
             }
-            ctx.Inventory.Add(id.Trim(), count);
+            InventoryRewards.Grant(ctx.Inventory, id.Trim(), count);
         }
     }
 }
